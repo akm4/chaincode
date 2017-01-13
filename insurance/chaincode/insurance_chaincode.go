@@ -1,12 +1,12 @@
 package main
 
 import (
-    "encoding/json"
+    //"encoding/json"
     "errors"
     "fmt"
     "strconv"
-    "strings"
-    "time"
+    //"strings"
+    //"time"
 
     "github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -25,6 +25,10 @@ func main() {
 
 //SHIM - INIT
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+	var Aval int 
+ 	var err error 
+
     if len(args) != 1 {
         return nil, errors.New("Incorrect number of arguments. Expecting 1")
     }
@@ -45,7 +49,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
     if function == "init" { //initialize the chaincode state, used as reset
         return t.Init(stub, "init", args)
     } else if function == "init_client" { //create a new client
-        return t.init_client(stub, args)
+        return nil,nil
+		//t.init_client(stub, args)
     }
     fmt.Println("invoke did not find func: " + function) //error
 
