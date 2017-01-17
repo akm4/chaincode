@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/op/go-logging"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -30,6 +31,8 @@ type Client struct {
 var (
 	//list of all clients
 	clientList map[string]*Client
+	// Logging
+	appLogger = logging.MustGetLogger("SimpleChaincode")
 )
 
 // MAIN
@@ -48,6 +51,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	}
 	//reset list
 	clientList = make(map[string]*Client)
+	fmt.Println("init storage len=" + len(clientList))
+	appLogger.Debug("init storage len=" + len(clientList))
 	return nil, nil
 
 }
@@ -83,9 +88,9 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	} else if function == "print_all_clients" {
 		return t.print_all_clients(stub, args)
 	}
-	//	 else if function == "print_client" {
-	//		return t.print_client(stub, args)
-	//	}
+	//	else if function == "print_client" {
+	//			return t.print_client(stub, args)
+	//		}
 
 	fmt.Println("query did not find func: " + function) //error
 
@@ -93,6 +98,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 }
 
 func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Println("current storage len=" + len(clientList))
 	s := " clients="
 	for clientHash, _ := range clientList {
 		s += clientHash
@@ -109,6 +115,7 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	status := args[1]
 	user := args[2]
 	insComp := args[3]
+	fmt.Println("current storage len before insert=" + len(clientList))
 	//get client by hash
 	if _, ok := clientList[hash]; ok {
 		return nil, errors.New("client " + hash + "already exists")
@@ -116,6 +123,7 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	newClient := &Client{}
 	newClient.make_action("insert", status, user, insComp)
 	clientList[hash] = newClient
+	fmt.Println("current storage len after insert=" + len(clientList))
 	return nil, nil
 }
 
