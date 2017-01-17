@@ -19,11 +19,11 @@ type Action struct {
 	InsuranceCompany string `json:"insuranceCompany"`
 	User             string `json:"user"`
 	Method           string `json:"method"`
-	Date             Date   `json:"date"`
+	Date             time.Time   `json:"date"`
 }
 type Client struct {
 	Status     string   `json:"status"`
-	ModifyDate Date     `json:"modifyDate"`
+	ModifyDate time.Time     `json:"modifyDate"`
 	History    []Action `json:"history"`
 }
 
