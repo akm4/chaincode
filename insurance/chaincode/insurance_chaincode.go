@@ -29,7 +29,7 @@ type Client struct {
 
 var (
 	//list of all clients
-	clientList map[string]Client
+	clientList map[string]*Client
 )
 
 // MAIN
@@ -47,7 +47,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 	//reset list
-	clientList := make(map[string]Client)
+	clientList := make(map[string]*Client)
 	return nil, nil
 
 }
