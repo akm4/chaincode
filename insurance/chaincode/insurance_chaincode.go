@@ -110,13 +110,13 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	user := args[2]
 	insComp := args[3]
 	//get client by hash
-	_, ok = clientList[hash]
+	_, ok := clientList[hash]
 	if ok == true {
 		return nil, errors.New("client " + hash + "already exists")
 	}
-	newClient = make(Client)
+	newClient = new(Client)
 	clientList[hash] = newClient
-	newClient = make_action("insert", status, user, insComp, newClient)
+	newClient, error = make_action("insert", status, user, insComp, newClient)
 	return nil, nil
 }
 
@@ -135,7 +135,6 @@ func make_action(actionMethod string, status string, user string, insuranceCompa
 func print_history_of_client(client Client) {
 	//	//historyList :=make([]string,0,len(client.History))
 	for _, historyNum := range client.History {
-		fmt.Println("test")
 		action := client.History[historyNum]
 		//historyList = append(historyList,"InsuranceCompany:"+action.InsuranceCompany + "User:"+action.User + "Method:"+action.Method +"Date:"+Date )
 		fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date)
