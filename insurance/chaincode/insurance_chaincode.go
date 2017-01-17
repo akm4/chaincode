@@ -114,8 +114,8 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	if ok == true {
 		return nil, errors.New("client " + hash + "already exists")
 	}
-	newClient = new(Client)
-	newClient, error = make_action("insert", status, user, insComp, newClient)
+	newClient := new(Client)
+	newClient, err : = make_action("insert", status, user, insComp, newClient)
 	clientList[hash] = newClient
 	return nil, nil
 }
