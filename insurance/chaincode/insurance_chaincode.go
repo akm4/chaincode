@@ -95,7 +95,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	s := " clients="
 	for clientHash, clientSt := range clientList {
-		s = apppend(c, clientHash)
+		s = append(c, clientHash)
 	}
 	return []byte(s), nil
 }
@@ -105,10 +105,10 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	if len(args) < 4 {
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
-	hash = args[0]
-	status = args[1]
-	user = args[2]
-	insComp = args[3]
+	hash := args[0]
+	status := args[1]
+	user := args[2]
+	insComp := args[3]
 	//get client by hash
 	_, ok = clientList[hash]
 	if ok == true {
