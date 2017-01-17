@@ -60,6 +60,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("invoke is running " + function)
 	fmt.Printf("ivoke storage len=%d", len(clientList))
+	fmt.Errorf("TEST INIT")
+	fmt.Print("TEST INIT2")
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
