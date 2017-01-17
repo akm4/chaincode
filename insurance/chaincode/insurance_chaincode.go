@@ -3,13 +3,12 @@ package main
 import (
 	//"encoding/json"
 	"errors"
-	//"fmt"
+	"fmt"
 	//"strconv"
 	//"strings"
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/op/go-logging"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -31,16 +30,13 @@ type Client struct {
 var (
 	//list of all clients
 	clientList map[string]*Client
-	// Logging
-	appLogger = logging.MustGetLogger("SimpleChaincode")
 )
 
 // MAIN
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		//fmt.Printf("Error starting Simple chaincode: %s", err)
-		appLogger.Debugf("Error starting Simple chaincode: %s", err)
+		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -52,16 +48,15 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	}
 	//reset list
 	clientList = make(map[string]*Client)
-	//fmt.Println("init storage len=" + len(clientList))
-	appLogger.Debug("init storage len=%d", len(clientList))
+	fmt.Printf("init storage len=%d", len(clientList))
 	return nil, nil
 
 }
 
 //SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//fmt.Println("invoke is running " + function)
-
+	fmt.Println("invoke is running " + function)
+	fmt.Printf("ivoke storage len=%d", len(clientList))
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
