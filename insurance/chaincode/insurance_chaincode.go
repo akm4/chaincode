@@ -139,14 +139,14 @@ func (client *Client) make_action(actionMethod string, status string, user strin
 	client.History = append(client.History, action)
 }
 
-func print_history_of_client(client Client) {
-	//	//historyList :=make([]string,0,len(client.History))
-	for historyNum, _ := range client.History {
-		action := client.History[historyNum]
-		//historyList = append(historyList,"InsuranceCompany:"+action.InsuranceCompany + "User:"+action.User + "Method:"+action.Method +"Date:"+Date )
-		//fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date.String())
-	}
-}
+//func print_history_of_client(client Client) {
+//	//	//historyList :=make([]string,0,len(client.History))
+//	for historyNum, _ := range client.History {
+//		action := client.History[historyNum]
+//		//historyList = append(historyList,"InsuranceCompany:"+action.InsuranceCompany + "User:"+action.User + "Method:"+action.Method +"Date:"+Date )
+//		//fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date.String())
+//	}
+//}
 
 //read by name from all state
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
