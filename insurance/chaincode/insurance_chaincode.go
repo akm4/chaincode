@@ -94,8 +94,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	s := " clients="
-	for clientHash, clientSt := range clientList {
-		s = append(c, clientHash)
+	for clientHash, _ := range clientList {
+		s += clientHash
 	}
 	return []byte(s), nil
 }
