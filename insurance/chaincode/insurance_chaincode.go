@@ -3,7 +3,7 @@ package main
 import (
 	//"encoding/json"
 	"errors"
-	"fmt"
+	//"fmt"
 	//"strconv"
 	//"strings"
 	"time"
@@ -39,7 +39,8 @@ var (
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		//fmt.Printf("Error starting Simple chaincode: %s", err)
+		appLogger.Debugf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -51,15 +52,15 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	}
 	//reset list
 	clientList = make(map[string]*Client)
-	fmt.Println("init storage len=" + len(clientList))
-	appLogger.Debug("init storage len=" + len(clientList))
+	//fmt.Println("init storage len=" + len(clientList))
+	appLogger.Debug("init storage len=%d", len(clientList))
 	return nil, nil
 
 }
 
 //SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
+	//fmt.Println("invoke is running " + function)
 
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
@@ -73,14 +74,14 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	//		return t.delete_client(stub, args)
 	//	}
 
-	fmt.Println("invoke did not find func: " + function) //error
+	//fmt.Println("invoke did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function invocation")
 }
 
 // SHIM - QUERY
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("query is running " + function)
+	//fmt.Println("query is running " + function)
 
 	// Handle different functions
 	if function == "read" { //read a variable
@@ -92,13 +93,13 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	//			return t.print_client(stub, args)
 	//		}
 
-	fmt.Println("query did not find func: " + function) //error
+	//fmt.Println("query did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function query")
 }
 
 func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("current storage len=" + len(clientList))
+	//fmt.Println("current storage len=" + len(clientList))
 	s := " clients="
 	for clientHash, _ := range clientList {
 		s += clientHash
@@ -115,7 +116,7 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	status := args[1]
 	user := args[2]
 	insComp := args[3]
-	fmt.Println("current storage len before insert=" + len(clientList))
+	//fmt.Println("current storage len before insert=" + len(clientList))
 	//get client by hash
 	if _, ok := clientList[hash]; ok {
 		return nil, errors.New("client " + hash + "already exists")
@@ -123,7 +124,7 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	newClient := &Client{}
 	newClient.make_action("insert", status, user, insComp)
 	clientList[hash] = newClient
-	fmt.Println("current storage len after insert=" + len(clientList))
+	//fmt.Println("current storage len after insert=" + len(clientList))
 	return nil, nil
 }
 
@@ -143,7 +144,7 @@ func print_history_of_client(client Client) {
 	for historyNum, _ := range client.History {
 		action := client.History[historyNum]
 		//historyList = append(historyList,"InsuranceCompany:"+action.InsuranceCompany + "User:"+action.User + "Method:"+action.Method +"Date:"+Date )
-		fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date.String())
+		//fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date.String())
 	}
 }
 
