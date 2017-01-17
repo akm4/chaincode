@@ -16,15 +16,15 @@ type SimpleChaincode struct {
 }
 
 type Action struct {
-	InsuranceCompany string `json:"insuranceCompany"`
-	User             string `json:"user"`
-	Method           string `json:"method"`
-	Date             time.Time   `json:"date"`
+	InsuranceCompany string    `json:"insuranceCompany"`
+	User             string    `json:"user"`
+	Method           string    `json:"method"`
+	Date             time.Time `json:"date"`
 }
 type Client struct {
-	Status     string   `json:"status"`
-	ModifyDate time.Time     `json:"modifyDate"`
-	History    []Action `json:"history"`
+	Status     string    `json:"status"`
+	ModifyDate time.Time `json:"modifyDate"`
+	History    []Action  `json:"history"`
 }
 
 var (
@@ -61,11 +61,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.Init(stub, "init", args)
 	} else if function == "insert_client" { //create a new client
 		return t.insert_client(stub, args)
-	} else if function == "update_client" { //update a client
-		return t.update_client(stub, args)
-	} else if function == "delete_client" { //delete a client
-		return t.delete_client(stub, args)
 	}
+	//	else if function == "update_client" { //update a client
+	//		return t.update_client(stub, args)
+	//	} else if function == "delete_client" { //delete a client
+	//		return t.delete_client(stub, args)
+	//	}
 
 	fmt.Println("invoke did not find func: " + function) //error
 
@@ -81,9 +82,10 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.read(stub, args)
 	} else if function == "print_all_clients" {
 		return t.print_all_clients(stub, args)
-	} else if function == "print_client" {
-		return t.print_client(stub, args)
 	}
+	//	 else if function == "print_client" {
+	//		return t.print_client(stub, args)
+	//	}
 
 	fmt.Println("query did not find func: " + function) //error
 
@@ -95,7 +97,7 @@ func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, ar
 	for clientHash, clientSt := range clientList {
 		s = apppend(c, clientHash)
 	}
-	return s, nil
+	return []byte(s), nil
 }
 
 func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
