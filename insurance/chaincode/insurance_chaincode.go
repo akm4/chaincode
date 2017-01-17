@@ -19,7 +19,7 @@ type Action struct {
 	InsuranceCompany string `json:"insuranceCompany"`
 	User             string `json:"user"`
 	Method           string `json:"method"`
-	Date             time   `json:"date"`
+	Date             Date   `json:"date"`
 }
 type Client struct {
 	Status     string   `json:"status"`
