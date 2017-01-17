@@ -23,7 +23,7 @@ type Action struct {
 }
 type Client struct {
 	Status     string   `json:"status"`
-	ModifyDate time     `json:"modifyDate"`
+	ModifyDate Date     `json:"modifyDate"`
 	History    []Action `json:"history"`
 }
 
