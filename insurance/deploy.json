@@ -110,8 +110,8 @@
         ]
     },
     "chaincode":{
-            "zip_url": "https://github.com/akm4/chaincode_test/archive/v1.0.0.zip",
-            "unzip_dir": "chaincode_test-1.0.0/insurance/chaincode",
+            "zip_url": "https://github.com/akm4/chaincode/archive/v1.0.3.zip",
+            "unzip_dir": "chaincode-1.0.3/insurance/chaincode",
             "git_url": "http://gopkg.in/akm4/chaincode_test.v1.0/chaincode"
         }
 }
