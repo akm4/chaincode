@@ -1,117 +1,117 @@
 {
-    "network": {
-        "peers": [
-            {
-                "api_host": "b076f886fde14403b8437abdf3c54dc7-vp0.us.blockchain.ibm.com",
-                "api_port": 80,
-                "api_port_tls": 5001,
-                "id": "b076f886fde14403b8437abdf3c54dc7-vp0"
-            },
-            {
-                "api_host": "b076f886fde14403b8437abdf3c54dc7-vp1.us.blockchain.ibm.com",
-                "api_port": 80,
-                "api_port_tls": 5001,
-                "id": "b076f886fde14403b8437abdf3c54dc7-vp1"
-            },
-            {
-                "api_host": "b076f886fde14403b8437abdf3c54dc7-vp2.us.blockchain.ibm.com",
-                "api_port": 80,
-                "api_port_tls": 5001,
-                "id": "b076f886fde14403b8437abdf3c54dc7-vp2"
-            },
-            {
-                "api_host": "b076f886fde14403b8437abdf3c54dc7-vp3.us.blockchain.ibm.com",
-                "api_port": 80,
-                "api_port_tls": 5001,
-                "id": "b076f886fde14403b8437abdf3c54dc7-vp3"
-            }
-        ],
-        "users": [
-          {
-          	"enrollId": "user_type1_0",
-          	"enrollSecret": "a408533af7"
-          },
-          {
-          	"enrollId": "user_type1_1",
-          	"enrollSecret": "0645cd22c2"
-          },
-          {
-          	"enrollId": "user_type1_2",
-          	"enrollSecret": "f20d1512c3"
-          },
-          {
-          	"enrollId": "user_type1_3",
-          	"enrollSecret": "87c0ba6242"
-          },
-          {
-          	"enrollId": "user_type1_4",
-          	"enrollSecret": "34c2b32107"
-          },
-          {
-          	"enrollId": "user_type2_0",
-          	"enrollSecret": "08e2aab696"
-          },
-          {
-          	"enrollId": "user_type2_1",
-          	"enrollSecret": "13264d5ab5"
-          },
-          {
-          	"enrollId": "user_type2_2",
-          	"enrollSecret": "e8d87631a1"
-          },
-          {
-          	"enrollId": "user_type2_3",
-          	"enrollSecret": "5894b39c2a"
-          },
-          {
-          	"enrollId": "user_type2_4",
-          	"enrollSecret": "af815fc0e2"
-          },
-          {
-          	"enrollId": "user_type4_0",
-          	"enrollSecret": "ec583becf9"
-          },
-          {
-          	"enrollId": "user_type4_1",
-          	"enrollSecret": "c74116d831"
-          },
-          {
-          	"enrollId": "user_type4_2",
-          	"enrollSecret": "7dc3be834c"
-          },
-          {
-          	"enrollId": "user_type4_3",
-          	"enrollSecret": "9bc5c80b9e"
-          },
-          {
-          	"enrollId": "user_type4_4",
-          	"enrollSecret": "bdd18c32d5"
-          },
-          {
-          	"enrollId": "user_type8_0",
-          	"enrollSecret": "3856df3189"
-          },
-          {
-          	"enrollId": "user_type8_1",
-          	"enrollSecret": "ac90f1830c"
-          },
-          {
-          	"enrollId": "user_type8_2",
-          	"enrollSecret": "a934676b89"
-          },
-          {
-          	"enrollId": "user_type8_3",
-          	"enrollSecret": "92133c6336"
-          },
-          {
-          	"enrollId": "user_type8_4",
-          	"enrollSecret": "007b266368"
-          }
-        ]
-    },
-    "chaincode":{
-            "zip_url": "https://github.com/akm4/chaincode/archive/v1.0.3.zip",
-            "unzip_dir": "chaincode-1.0.3/insurance/chaincode",
-            "git_url": "http://gopkg.in/akm4/chaincode_test.v1.0/chaincode"
-        }
+  "network": {
+    "peers": [
+      {
+        "api_host": "74478bdfd7934d44bdbb7642aa89a6e5-vp0.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5003,
+        "id": "74478bdfd7934d44bdbb7642aa89a6e5-vp0"
+      },
+      {
+        "api_host": "74478bdfd7934d44bdbb7642aa89a6e5-vp1.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5003,
+        "id": "74478bdfd7934d44bdbb7642aa89a6e5-vp1"
+      },
+      {
+        "api_host": "74478bdfd7934d44bdbb7642aa89a6e5-vp3.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5003,
+        "id": "74478bdfd7934d44bdbb7642aa89a6e5-vp3"
+      },
+      {
+        "api_host": "74478bdfd7934d44bdbb7642aa89a6e5-vp2.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5003,
+        "id": "74478bdfd7934d44bdbb7642aa89a6e5-vp2"
+      }
+    ],
+    "users": [
+      {
+        "enrollId": "user_type1_0",
+        "enrollSecret": "ab5a80aa11"
+      },
+      {
+        "enrollId": "user_type1_1",
+        "enrollSecret": "78ed9e27cb"
+      },
+      {
+        "enrollId": "user_type1_2",
+        "enrollSecret": "ccc977efc8"
+      },
+      {
+        "enrollId": "user_type1_3",
+        "enrollSecret": "9634d2bea4"
+      },
+      {
+        "enrollId": "user_type1_4",
+        "enrollSecret": "178095630a"
+      },
+      {
+        "enrollId": "user_type2_0",
+        "enrollSecret": "902aea2aa4"
+      },
+      {
+        "enrollId": "user_type2_1",
+        "enrollSecret": "fb41cf51e5"
+      },
+      {
+        "enrollId": "user_type2_2",
+        "enrollSecret": "9b0a9509ee"
+      },
+      {
+        "enrollId": "user_type2_3",
+        "enrollSecret": "1648325302"
+      },
+      {
+        "enrollId": "user_type2_4",
+        "enrollSecret": "e4d0c3f0e0"
+      },
+      {
+        "enrollId": "user_type4_0",
+        "enrollSecret": "5f718e6608"
+      },
+      {
+        "enrollId": "user_type4_1",
+        "enrollSecret": "1be423e7ce"
+      },
+      {
+        "enrollId": "user_type4_2",
+        "enrollSecret": "aa88c825e3"
+      },
+      {
+        "enrollId": "user_type4_3",
+        "enrollSecret": "bfac0ad5da"
+      },
+      {
+        "enrollId": "user_type4_4",
+        "enrollSecret": "4c0b98b3e4"
+      },
+      {
+        "enrollId": "user_type8_0",
+        "enrollSecret": "b8d9133415"
+      },
+      {
+        "enrollId": "user_type8_1",
+        "enrollSecret": "24a57c98e6"
+      },
+      {
+        "enrollId": "user_type8_2",
+        "enrollSecret": "f1938760a7"
+      },
+      {
+        "enrollId": "user_type8_3",
+        "enrollSecret": "dcf39b7ac4"
+      },
+      {
+        "enrollId": "user_type8_4",
+        "enrollSecret": "e2ab8267bf"
+      }
+    ]
+  },
+  "chaincode":{
+    "zip_url": "https://github.com/akm4/chaincode/archive/1.0.3.zip",
+    "unzip_dir": "chaincode-1.0.3/insurance/chaincode",
+    "git_url": "http://gopkg.in/akm4/chaincode.v1/insurance/chaincode"
+  }
 }
