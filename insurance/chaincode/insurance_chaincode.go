@@ -92,9 +92,9 @@ func (t *SimpleChaincode) printClient(stub shim.ChaincodeStubInterface, args []s
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
-	var res Client
+	res, ok := clientList[hash]
 	//check client by hash
-	if res, ok := clientList[hash]; !ok {
+	if !ok {
 		return nil, errors.New("not found")
 	}
 	jsonAsBytes, err := json.Marshal(res)
@@ -111,8 +111,8 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 	//check client by hash
-	var findClient Client
-	if findClient, ok := clientList[hash]; ok {
+	findClient, ok := clientList[hash]
+	if ok {
 		//TODO check if client delete - maybe recreate ???
 		return nil, errors.New("client " + hash + " already exists")
 	}
@@ -132,9 +132,9 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 
-	var findClient Client
+	findClient, ok := clientList[hash]
 	//get client by hash
-	if findClient, ok := clientList[hash]; !ok {
+	if !ok {
 		return nil, errors.New("client " + hash + "not exists")
 	}
 	//TODO check if next state is correct (ie delete to ok)
@@ -153,9 +153,9 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	user := args[1]
 	insComp := args[2]
 
-	var findClient Client
+	findClient, ok := clientList[hash]
 	//get client by hash
-	if findClient, ok := clientList[hash]; !ok {
+	if !ok {
 		return nil, errors.New("client " + hash + "not exists")
 	}
 	findClient.Status = "deleted"
