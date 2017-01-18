@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"errors"
 	"fmt"
 	//"strconv"
@@ -34,9 +34,6 @@ var (
 
 // MAIN
 func main() {
-	fmt.Errorf("TEST PRINT ERROR")
-	fmt.Print("TEST PRINT")
-	fmt.Printf("TEST PRINF")
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
@@ -100,11 +97,12 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Printf("current storage len %d", len(clientList))
-	s := " clients="
-	for clientHash, _ := range clientList {
-		s += clientHash
-	}
-	return []byte(s), nil
+	//	s := " clients="
+	//	for clientHash, _ := range clientList {
+	//		s += clientHash
+	//	}
+	jsonAsBytes, _ := json.Marshal(clientList)
+	return jsonAsBytes, nil
 }
 
 func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
