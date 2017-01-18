@@ -111,7 +111,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 	//check client by hash
-	findClient, ok := clientList[hash]
+	_, ok := clientList[hash]
 	if ok {
 		//TODO check if client delete - maybe recreate ???
 		return nil, errors.New("client " + hash + " already exists")
