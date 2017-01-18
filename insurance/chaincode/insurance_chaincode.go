@@ -20,6 +20,7 @@ type Action struct {
 	User             string    `json:"user"`
 	Method           string    `json:"method"`
 	Date             time.Time `json:"date"`
+	NewStatus        string    `json:newStatus`
 }
 type Client struct {
 	Status     string    `json:"status"`
@@ -48,7 +49,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	}
 	//reset list
 	clientList = make(map[string]*Client)
-	fmt.Printf("init storage len=%d", len(clientList))
 	return nil, nil
 
 }
@@ -56,56 +56,52 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 //SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("invoke is running " + function)
-	fmt.Printf("ivoke storage len=%d", len(clientList))
-	fmt.Errorf("TEST INIT")
-	fmt.Print("TEST INIT2")
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
-	} else if function == "insert_client" { //create a new client
-		return t.insert_client(stub, args)
+	} else if function == "insertClient" { //create a new client
+		return t.insertClient(stub, args)
+	} else if function == "updateClient" { //update a client
+		return t.updateClient(stub, args)
+	} else if function == "deleteClient" { //delete a client
+		return t.deleteClient(stub, args)
 	}
-	//	else if function == "update_client" { //update a client
-	//		return t.update_client(stub, args)
-	//	} else if function == "delete_client" { //delete a client
-	//		return t.delete_client(stub, args)
-	//	}
-
-	//fmt.Println("invoke did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function invocation")
 }
 
 // SHIM - QUERY
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//fmt.Println("query is running " + function)
-
 	// Handle different functions
-	if function == "read" { //read a variable
-		return t.read(stub, args)
-	} else if function == "print_all_clients" {
-		return t.print_all_clients(stub, args)
+	if function == "printClient" { //read client by hash
+		return t.printClient(stub, args)
+	} else if function == "printAllClients" { // read all clients
+		return t.printAllClients(stub, args)
 	}
-	//	else if function == "print_client" {
-	//			return t.print_client(stub, args)
-	//		}
-
-	//fmt.Println("query did not find func: " + function) //error
+	fmt.Println("query did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function query")
 }
 
-func (t *SimpleChaincode) print_all_clients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Printf("current storage len %d", len(clientList))
-	//	s := " clients="
-	//	for clientHash, _ := range clientList {
-	//		s += clientHash
-	//	}
-	jsonAsBytes, _ := json.Marshal(clientList)
-	return jsonAsBytes, nil
+func (t *SimpleChaincode) printAllClients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	jsonAsBytes, err := json.Marshal(clientList)
+	return jsonAsBytes, err
+}
+func (t *SimpleChaincode) printClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//parse parameters  - need 4
+	if len(args) < 4 {
+		return nil, errors.New("incorrect number of arguments. need 4")
+	}
+	hash := args[0]
+	//check client by hash
+	if res, ok := clientList[hash]; !ok {
+		return nil, errors.New("not found")
+	}
+	jsonAsBytes, err := json.Marshal(res)
+	return jsonAsBytes, err
 }
 
-func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
 	if len(args) < 4 {
 		return nil, errors.New("incorrect number of arguments. need 4")
@@ -114,51 +110,65 @@ func (t *SimpleChaincode) insert_client(stub shim.ChaincodeStubInterface, args [
 	status := args[1]
 	user := args[2]
 	insComp := args[3]
-	//fmt.Println("current storage len before insert=" + len(clientList))
-	//get client by hash
-	if _, ok := clientList[hash]; ok {
-		return nil, errors.New("client " + hash + "already exists")
+	//check client by hash
+	if findClient, ok := clientList[hash]; ok {
+		//TODO check if client delete - maybe recreate ???
+		return nil, errors.New("client " + hash + " already exists")
 	}
 	newClient := &Client{}
-	newClient.make_action("insert", status, user, insComp)
+	newClient.makeAction("insert", status, user, insComp)
 	clientList[hash] = newClient
-	//fmt.Println("current storage len after insert=" + len(clientList))
 	return nil, nil
 }
 
-func (client *Client) make_action(actionMethod string, status string, user string, insuranceCompany string) {
+func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//parse parameters  - need 4
+	if len(args) < 4 {
+		return nil, errors.New("incorrect number of arguments. need 4")
+	}
+	hash := args[0]
+	status := args[1]
+	user := args[2]
+	insComp := args[3]
+
+	//get client by hash
+	if findClient, ok := clientList[hash]; !ok {
+		return nil, errors.New("client " + hash + "not exists")
+	}
+	//TODO check if next state is correct (ie delete to ok)
+	findClient.Status = status
+	findClient.ModifyDate = time.Now()
+	findClient.makeAction("update", status, user, insComp)
+	return nil, nil
+}
+
+func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//parse parameters  - need 4
+	if len(args) < 3 {
+		return nil, errors.New("incorrect number of arguments. need 4")
+	}
+	hash := args[0]
+	user := args[1]
+	insComp := args[2]
+
+	//get client by hash
+	if findClient, ok := clientList[hash]; !ok {
+		return nil, errors.New("client " + hash + "not exists")
+	}
+	findClient.Status = "deleted"
+	findClient.ModifyDate = time.Now()
+	findClient.makeAction("delete", "deleted", user, insComp)
+	return nil, nil
+}
+
+//create action record for client request history
+func (client *Client) makeAction(actionMethod string, status string, user string, insuranceCompany string) {
 	//update status
 	client.Status = status
 	//update actual date
 	client.ModifyDate = time.Now()
 	//create action
-	action := Action{insuranceCompany, user, actionMethod, time.Now()}
+	action := Action{insuranceCompany, user, actionMethod, time.Now(), status}
 	//add to history
 	client.History = append(client.History, action)
-}
-
-//func print_history_of_client(client Client) {
-//	//	//historyList :=make([]string,0,len(client.History))
-//	for historyNum, _ := range client.History {
-//		action := client.History[historyNum]
-//		//historyList = append(historyList,"InsuranceCompany:"+action.InsuranceCompany + "User:"+action.User + "Method:"+action.Method +"Date:"+Date )
-//		//fmt.Println("InsuranceCompany:'" + action.InsuranceCompany + "' User:" + action.User + "Method:" + action.Method + " Date:" + action.Date.String())
-//	}
-//}
-
-//read by name from all state
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	var name, jsonResp string
-	var err error
-
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting name of the var to query")
-	}
-	name = args[0]
-	valAsbytes, err := stub.GetState(name) //get the var from chaincode state
-	if err != nil {
-		jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
-		return nil, errors.New(jsonResp)
-	}
-	return valAsbytes, nil
 }
