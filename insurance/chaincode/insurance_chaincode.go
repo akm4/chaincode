@@ -79,7 +79,6 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.printAllClients(stub, args)
 	}
 	fmt.Println("query did not find func: " + function) //error
-
 	return nil, errors.New("Received unknown function query")
 }
 
@@ -93,6 +92,7 @@ func (t *SimpleChaincode) printClient(stub shim.ChaincodeStubInterface, args []s
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
+	var res Client
 	//check client by hash
 	if res, ok := clientList[hash]; !ok {
 		return nil, errors.New("not found")
@@ -111,6 +111,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 	//check client by hash
+	var findClient Client
 	if findClient, ok := clientList[hash]; ok {
 		//TODO check if client delete - maybe recreate ???
 		return nil, errors.New("client " + hash + " already exists")
@@ -131,6 +132,7 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 
+	var findClient Client
 	//get client by hash
 	if findClient, ok := clientList[hash]; !ok {
 		return nil, errors.New("client " + hash + "not exists")
@@ -151,6 +153,7 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	user := args[1]
 	insComp := args[2]
 
+	var findClient Client
 	//get client by hash
 	if findClient, ok := clientList[hash]; !ok {
 		return nil, errors.New("client " + hash + "not exists")
