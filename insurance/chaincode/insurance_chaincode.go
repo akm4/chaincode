@@ -91,8 +91,8 @@ func (t *SimpleChaincode) makeMultiplePutState(stub shim.ChaincodeStubInterface,
 	for index, value := range args {
 		key := "index" + string(index)
 		val := []byte(value)
-		fmt.Println("put to state index" + key + " value " + string(val))
-		stub.PutState("index"+string(index), val)
+		fmt.Println("put to state index = " + key + " value = " + string(val))
+		stub.PutState(key, val)
 	}
 	return nil, nil
 }
@@ -107,7 +107,7 @@ func (t *SimpleChaincode) readValueFromState(stub shim.ChaincodeStubInterface, a
 	}
 
 	name = args[0]
-	fmt.Println("try to get value by key=" + name)
+	fmt.Println("try to get value by key = " + name)
 	valAsbytes, err := stub.GetState(name) //get the var from chaincode state
 	if err != nil {
 		fmt.Println("ERROR")
