@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	//"strconv"
+	"strconv"
 	//"strings"
 	"time"
 
@@ -89,9 +89,9 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 // TODO delete this function
 func (t *SimpleChaincode) makeMultiplePutState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	for index, value := range args {
-		key := "index" + string(index)
+		key := "index" + strconv.Itoa(index)
 		val := []byte(value)
-		fmt.Println("put to state index = " + key + " value = " + string(val))
+		fmt.Println("put to state index = " + key + " value = " + value)
 		stub.PutState(key, val)
 	}
 	return nil, nil
@@ -114,6 +114,7 @@ func (t *SimpleChaincode) readValueFromState(stub shim.ChaincodeStubInterface, a
 		jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
 		return nil, errors.New(jsonResp)
 	}
+	fmt.Println("get VALUE LENGTH = " + strconv.Itoa(len(valAsbytes)))
 	fmt.Println("get VALUE = " + string(valAsbytes))
 	return valAsbytes, nil
 }
