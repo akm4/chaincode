@@ -89,7 +89,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 // TODO delete this function
 func (t *SimpleChaincode) makeMultiplePutState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	for index, value := range args {
-		defer stub.PutState("index"+index, []byte(value))
+		defer stub.PutState("index"+string(index), []byte(value))
 	}
 	return nil, nil
 }
