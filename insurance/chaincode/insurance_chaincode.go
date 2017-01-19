@@ -79,6 +79,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.printClient(stub, args)
 	} else if function == "printAllClients" { // read all clients
 		return t.printAllClients(stub, args)
+	} else if function == "readValueFromState" { // read by name from stste
+		return t.readValueFromState(stub, args)
 	}
 	fmt.Println("query did not find func: " + function) //error
 	return nil, errors.New("Received unknown function query")
@@ -90,6 +92,24 @@ func (t *SimpleChaincode) makeMultiplePutState(stub shim.ChaincodeStubInterface,
 		defer stub.PutState("index"+index, []byte(value))
 	}
 	return nil, nil
+}
+
+// TODO delete this function
+func (t *SimpleChaincode) readValueFromState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var name, jsonResp string
+	var err error
+
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting name of the var to query")
+	}
+
+	name = args[0]
+	valAsbytes, err := stub.GetState(name) //get the var from chaincode state
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+	return valAsbytes, nil
 }
 
 func (t *SimpleChaincode) printAllClients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
