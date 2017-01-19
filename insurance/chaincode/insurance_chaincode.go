@@ -65,6 +65,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.updateClient(stub, args)
 	} else if function == "deleteClient" { //delete a client
 		return t.deleteClient(stub, args)
+	} else if function == "makeMultiplePutState" {
+		return t.makeMultiplePutState(stub, args)
 	}
 
 	return nil, errors.New("Received unknown function invocation")
@@ -82,14 +84,22 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	return nil, errors.New("Received unknown function query")
 }
 
+// TODO delete this function
+func (t *SimpleChaincode) makeMultiplePutState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	for index, value := range args {
+		defer stub.PutState("index"+index, []byte(value))
+	}
+	return nil, nil
+}
+
 func (t *SimpleChaincode) printAllClients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	jsonAsBytes, err := json.Marshal(clientList)
 	return jsonAsBytes, err
 }
 func (t *SimpleChaincode) printClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
-	if len(args) < 4 {
-		return nil, errors.New("incorrect number of arguments. need 4")
+	if len(args) < 1 {
+		return nil, errors.New("incorrect number of arguments. need 1")
 	}
 	hash := args[0]
 	res, ok := clientList[hash]
@@ -145,9 +155,9 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 }
 
 func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//parse parameters  - need 4
+	//parse parameters  - need 3
 	if len(args) < 3 {
-		return nil, errors.New("incorrect number of arguments. need 4")
+		return nil, errors.New("incorrect number of arguments. need 3")
 	}
 	hash := args[0]
 	user := args[1]
