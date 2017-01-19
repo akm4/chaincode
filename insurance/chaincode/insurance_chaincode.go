@@ -141,7 +141,7 @@ func (t *SimpleChaincode) writeValueToStateWithError(stub shim.ChaincodeStubInte
 	}
 	name := args[0]
 	val := args[1]
-	stub.PutState(name, val)
+	val := []byte(args[1])
 	return nil, errors.New("Fail!!!!")
 }
 
