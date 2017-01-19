@@ -67,6 +67,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.deleteClient(stub, args)
 	} else if function == "makeMultiplePutState" {
 		return t.makeMultiplePutState(stub, args)
+	} else if function == "writeValueToState" {
+		return t.writeValueToState(stub, args)
+	} else if function == "writeValueToStateWithError" {
+		return t.writeValueToStateWithError(stub, args)
 	}
 
 	return nil, errors.New("Received unknown function invocation")
@@ -117,6 +121,28 @@ func (t *SimpleChaincode) readValueFromState(stub shim.ChaincodeStubInterface, a
 	fmt.Println("get VALUE LENGTH = " + strconv.Itoa(len(valAsbytes)))
 	fmt.Println("get VALUE = " + string(valAsbytes))
 	return valAsbytes, nil
+}
+
+//TODO delete this function
+func (t *SimpleChaincode) writeValueToState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2 ")
+	}
+	name := args[0]
+	val := args[1]
+	stub.PutState(name, val)
+	return nil, nil
+}
+
+//TODO delete this function
+func (t *SimpleChaincode) writeValueToStateWithError(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2 ")
+	}
+	name := args[0]
+	val := args[1]
+	stub.PutState(name, val)
+	return nil, errors.New("Fail!!!!")
 }
 
 func (t *SimpleChaincode) printAllClients(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
