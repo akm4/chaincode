@@ -129,7 +129,7 @@ func (t *SimpleChaincode) writeValueToState(stub shim.ChaincodeStubInterface, ar
 		return nil, errors.New("Incorrect number of arguments. Expecting 2 ")
 	}
 	name := args[0]
-	val := args[1]
+	val := []byte(args[1])
 	stub.PutState(name, val)
 	return nil, nil
 }
