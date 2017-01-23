@@ -60,7 +60,15 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
-	//TODO reset list
+	//TODO reset all list
+
+	var blank []string
+	blankBytes, _ := json.Marshal(&blank)
+	err := stub.PutState(clientListKey, blankBytes)
+	if err != nil {
+		fmt.Println("Failed to initialize clinet list")
+	}
+
 	return nil, nil
 
 }
@@ -169,7 +177,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	}
 	err = json.Unmarshal(clientListAsBytes, &clientIndex)
 	if err != nil {
-		return nil, errors.New("failed get client list")
+		return nil, errors.New("failed unmarshalling client list")
 	}
 	var found bool
 	for _, v := range clientIndex {
