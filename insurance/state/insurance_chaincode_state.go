@@ -38,9 +38,9 @@ type Client struct {
 	//History    []Action  `json:"history"`
 }
 
-type HistoryList struct {
-	History []Action `json:"history"`
-}
+//type HistoryList struct {
+//	History []Action `json:"history"`
+//}
 
 //type ClientList struct {
 //	Storage []string `json:"storage"`
@@ -66,7 +66,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	blankBytes, _ := json.Marshal(&blank)
 	err := stub.PutState(clientListKey, blankBytes)
 	if err != nil {
-		fmt.Println("Failed to initialize clinet list")
+		fmt.Println("Failed to initialize client list")
 	}
 
 	return nil, nil
@@ -172,6 +172,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	//------check client in list
 	var clientIndex []string
 	clientListAsBytes, err := stub.GetState(clientListKey)
+	fmt.Println("current list: " + string(clientListAsBytes))
 	if err != nil {
 		return nil, errors.New("failed get client list")
 	}
@@ -208,12 +209,13 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	//get history from state
 	var history []Action
 	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
+	fmt.Println("current list: " + string(historyBytes))
 	if err != nil {
 		return nil, errors.New("Error getting history for client")
 	}
 	err = json.Unmarshal(historyBytes, &history)
 	if err != nil {
-		return nil, errors.New("Error getting history for client")
+		return nil, errors.New("Error unmarshalling history for client")
 	}
 	newAction := &Action{}
 	newAction.NewStatus = status
