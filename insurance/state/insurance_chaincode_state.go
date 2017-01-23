@@ -171,20 +171,22 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	insComp := args[3]
 	//------check client in list
 	var clientIndex []string
+	var found bool
 	clientListAsBytes, err := stub.GetState(clientListKey)
 	fmt.Println("current list: " + string(clientListAsBytes))
 	if err != nil {
 		return nil, errors.New("failed get client list")
 	}
-	err = json.Unmarshal(clientListAsBytes, &clientIndex)
-	if err != nil {
-		return nil, errors.New("failed unmarshalling client list")
-	}
-	var found bool
-	for _, v := range clientIndex {
-		if v == hash {
-			found = true
-			break
+	if clientListAsBytes != nil {
+		err = json.Unmarshal(clientListAsBytes, &clientIndex)
+		if err != nil {
+			return nil, errors.New("failed unmarshalling client list")
+		}
+		for _, v := range clientIndex {
+			if v == hash {
+				found = true
+				break
+			}
 		}
 	}
 	if found {
