@@ -215,9 +215,11 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return nil, errors.New("Error getting history for client")
 	}
-	err = json.Unmarshal(historyBytes, &history)
-	if err != nil {
-		return nil, errors.New("Error unmarshalling history for client")
+	if historyBytes != nil {
+		err = json.Unmarshal(historyBytes, &history)
+		if err != nil {
+			return nil, errors.New("Error unmarshalling history for client")
+		}
 	}
 	newAction := &Action{}
 	newAction.NewStatus = status
