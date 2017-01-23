@@ -172,7 +172,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("failed get client list")
 	}
 	var found bool
-	for i, v := range clientIndex {
+	for _, v := range clientIndex {
 		if v == hash {
 			found = true
 			break
