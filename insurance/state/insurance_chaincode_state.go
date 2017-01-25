@@ -38,14 +38,6 @@ type Client struct {
 	//History    []Action  `json:"history"`
 }
 
-//type HistoryList struct {
-//	History []Action `json:"history"`
-//}
-
-//type ClientList struct {
-//	Storage []string `json:"storage"`
-//}
-
 // MAIN
 func main() {
 	err := shim.Start(new(SimpleChaincode))
@@ -182,6 +174,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	//create new client record
 	newClient := &Client{}
 	newClient.ModifyDate = time.Now()
+	//TODO maybe need const = SUSP ???
 	newClient.Status = status
 	newClient.Hash = hash
 	newClientAsBytes, err := json.Marshal(&newClient)
@@ -197,7 +190,6 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
-
 	//------add client to client list
 	clientIndex = append(clientIndex, hash)
 	clientListAsBytesToWrite, err := json.Marshal(&clientIndex)
@@ -209,6 +201,51 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("Error saving the client list")
 	}
 
+	return nil, nil
+}
+
+func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//parse parameters  - need 4
+	if len(args) < 4 {
+		return nil, errors.New("incorrect number of arguments. need 4")
+	}
+	hash := args[0]
+	status := args[1]
+	user := args[2]
+	insComp := args[3]
+	//--- check existance
+	found, clientIndex, err := checkClientInClientList(stub, hash)
+	if err != nil {
+		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
+	}
+	//-- update client record
+	// get client from state
+	clientAsBytes, err := stub.GetState(clientPrfx + hash)
+	if err != nil {
+		return nil, errors.New("Error getting client " + hash + " from state")
+	}
+	var oldClient Client
+	err = json.Unmarshal(clientAsBytes, &oldClient)
+	if err != nil {
+		return nil, errors.New("Error unmarshalling client " + hash + " from state")
+	}
+	oldClient.ModifyDate = time.Now()
+	//TODO need analyze correct status
+	oldClient.Status = "deleted"
+	//put client record to state
+	clientAsBytes, err = json.Marshal(&oldClient)
+	if err != nil {
+		return nil, errors.New("Error marshalling updated client " + hash)
+	}
+	err = stub.PutState(clientPrfx+hash, clientAsBytes)
+	if err != nil {
+		return nil, errors.New("Error putting updated client " + hash + " to state")
+	}
+	//--add history record
+	err = addHistoryRecord(stub, hash, "update", user, insComp, status)
+	if err != nil {
+		return nil, errors.New("Error putting new history record " + hash + " to state")
+	}
 	return nil, nil
 }
 
@@ -227,7 +264,7 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
 	}
 	if !found {
-		return nil, errors.New("Client " + hash + "doesn't exist")
+		return nil, errors.New("Client " + hash + " doesn't exist")
 	}
 	//-- update client record
 	// get client from state
@@ -273,7 +310,6 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 }
 
 func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
-	//------check client in list
 	var clientIndex []string
 	var found bool
 	clientListAsBytes, err := stub.GetState(clientListKey)
@@ -330,11 +366,12 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 }
 
 //------------------------- TODO list----------------------
-// 1.  add logger
-// 2.  method for search (with history record )
-// 3.  covert string value to const
-// ++ 4.  make method for client "delete"
-// ++ 5.  insert method - replace codefor client existatce to function
-// 6. make method for  client update
+// 1.  Add logger
+// 2.  Add method for search (with history record )
+// 3.  Covert string value to const
+// ++ 4.  add method for client "delete"
+// ++ 5.  add method for replacing code for client existance to function
+// ++ 6. make method for  client update
 // 7. Delete State  istead of remove form array in Delete method?
+// 8. Refactor Delete method - change to update+delete from list
 //---------------------------------------------------------
