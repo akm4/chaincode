@@ -3,17 +3,17 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"time"
+	//"fmt"
 	//"strconv"
 	//"strings"
-	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/op/go-logging"
 )
 
-// SimpleChaincode example simple Chaincode implementation
-type SimpleChaincode struct {
-}
+//logger
+var chaincodeLogger = logging.MustGetLogger("insurance")
 
 var (
 	// prefix for saving client data
@@ -23,6 +23,16 @@ var (
 	//key for saving client List
 	clientListKey = "ClientListKey"
 )
+
+const ACTION_INSERT = "insert"
+const ACTION_UPDATE = "update"
+const ACTION_DELETE = "delete"
+
+const STATUS_DELETED = "deleted"
+
+// SimpleChaincode example simple Chaincode implementation
+type SimpleChaincode struct {
+}
 
 type Action struct {
 	InsuranceCompany string    `json:"insuranceCompany"`
@@ -42,7 +52,7 @@ type Client struct {
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		chaincodeLogger.Error("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -53,14 +63,12 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 	//TODO reset all list
-
 	var blank []string
 	blankBytes, _ := json.Marshal(&blank)
 	err := stub.PutState(clientListKey, blankBytes)
 	if err != nil {
-		fmt.Println("Failed to initialize client list")
+		chaincodeLogger.Error("Failed to initialize client list")
 	}
-
 	return nil, nil
 
 }
@@ -78,14 +86,14 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.printClientHistory(stub, args)
 	}
 
-	fmt.Println("query did not find func: " + function) //error
+	chaincodeLogger.Error("query did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function query")
 }
 
 //SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
+	chaincodeLogger.Info("Invoke is running this function :" + function)
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
@@ -95,10 +103,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.insertClient(stub, args)
 	} else if function == "deleteClient" { //delete a client
 		return t.deleteClient(stub, args)
+	} else if function == "updateClient" { // update a client
+		return t.updateClient(stub, args)
 	}
-	//	} else if function == "updateClient" { // TODO update a client
-	//		return t.updateClient(stub, args)
-
 	return nil, errors.New("Received unknown function invocation")
 }
 
@@ -186,7 +193,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("Error creating new client")
 	}
 	//------add record to client history
-	err = addHistoryRecord(stub, hash, "insert", user, insComp, status)
+	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -231,7 +238,7 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	}
 	oldClient.ModifyDate = time.Now()
 	//TODO need analyze correct status
-	oldClient.Status = "deleted"
+	oldClient.Status = STATUS_DELETED
 	//put client record to state
 	clientAsBytes, err = json.Marshal(&oldClient)
 	if err != nil {
@@ -242,7 +249,7 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("Error putting updated client " + hash + " to state")
 	}
 	//--add history record
-	err = addHistoryRecord(stub, hash, "update", user, insComp, status)
+	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, insComp, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -279,7 +286,7 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	}
 	oldClient.ModifyDate = time.Now()
 	//TODO need analyze if already deleted ???
-	oldClient.Status = "deleted"
+	oldClient.Status = STATUS_DELETED
 	//put client record to state
 	clientAsBytes, err = json.Marshal(&oldClient)
 	if err != nil {
@@ -290,7 +297,7 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("Error putting updated client " + hash + " to state")
 	}
 	//--add history record
-	err = addHistoryRecord(stub, hash, "delete", user, insComp, "deleted")
+	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, insComp, STATUS_DELETED)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -313,7 +320,7 @@ func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (boo
 	var clientIndex []string
 	var found bool
 	clientListAsBytes, err := stub.GetState(clientListKey)
-	fmt.Println("current list: " + string(clientListAsBytes))
+	chaincodeLogger.Info("current list: " + string(clientListAsBytes))
 	if err != nil {
 		return found, nil, errors.New("failed get client list")
 	}
@@ -332,10 +339,18 @@ func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (boo
 	return found, clientIndex, nil
 }
 
+/*****************
+stub shim.ChaincodeStubInterface
+hash string
+action string
+user string
+insuranceCompany string
+status string
+******************/
 func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, insuranceCompany string, status string) error {
 	var history []Action
 	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
-	fmt.Println("current list: " + string(historyBytes))
+	chaincodeLogger.Info("current list: " + string(historyBytes))
 	if err != nil {
 		return errors.New("Error getting history for client")
 	}
@@ -366,12 +381,13 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 }
 
 //------------------------- TODO list----------------------
-// 1.  Add logger
+// ++ 1.  Add logger
 // 2.  Add method for search (with history record )
-// 3.  Covert string value to const
+// ++ 3.  Covert string value to const
 // ++ 4.  add method for client "delete"
 // ++ 5.  add method for replacing code for client existance to function
 // ++ 6. make method for  client update
-// 7. Delete State  istead of remove form array in Delete method?
+// 7. Delete State  istead of remove form array in Delete method - need check version of HL
 // 8. Refactor Delete method - change to update+delete from list
+// 9. Refactor insert and update methods to isertAndUpdate
 //---------------------------------------------------------
