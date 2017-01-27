@@ -3,17 +3,17 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
-	//"fmt"
 	//"strconv"
 	//"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/op/go-logging"
+	//"github.com/op/go-logging"
 )
 
-//logger
-var chaincodeLogger = logging.MustGetLogger("insurance")
+//logger - not in v0.6
+//var chaincodeLogger = logging.MustGetLogger("insurance")
 
 var (
 	// prefix for saving client data
@@ -52,7 +52,8 @@ type Client struct {
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		chaincodeLogger.Error("Error starting Simple chaincode: %s", err)
+		//chaincodeLogger.Error("Error starting Simple chaincode: %s", err)
+		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -67,7 +68,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	blankBytes, _ := json.Marshal(&blank)
 	err := stub.PutState(clientListKey, blankBytes)
 	if err != nil {
-		chaincodeLogger.Error("Failed to initialize client list")
+		//chaincodeLogger.Error("Failed to initialize client list")
+		fmt.Println("Failed to initialize client list")
 	}
 	return nil, nil
 
@@ -86,14 +88,16 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.printClientHistory(stub, args)
 	}
 
-	chaincodeLogger.Error("query did not find func: " + function) //error
+	//chaincodeLogger.Error("query did not find func: " + function) //error
+	fmt.Println("query did not find func: " + function)
 
 	return nil, errors.New("Received unknown function query")
 }
 
 //SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	chaincodeLogger.Info("Invoke is running this function :" + function)
+	//chaincodeLogger.Info("Invoke is running this function :" + function)
+	fmt.Println("Invoke is running this function :" + function)
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
@@ -323,7 +327,8 @@ func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (boo
 	var clientIndex []string
 	var found bool
 	clientListAsBytes, err := stub.GetState(clientListKey)
-	chaincodeLogger.Info("current list: " + string(clientListAsBytes))
+	//chaincodeLogger.Info("current list: " + string(clientListAsBytes))
+	fmt.Println("current list: " + string(clientListAsBytes))
 	if err != nil {
 		return found, nil, errors.New("failed get client list")
 	}
@@ -353,7 +358,8 @@ status string
 func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, insuranceCompany string, status string) error {
 	var history []Action
 	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
-	chaincodeLogger.Info("current list: " + string(historyBytes))
+	//chaincodeLogger.Info("current list: " + string(historyBytes))
+	fmt.Println("current list: " + string(historyBytes))
 	if err != nil {
 		return errors.New("Error getting history for client")
 	}
