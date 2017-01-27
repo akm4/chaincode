@@ -221,9 +221,12 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	user := args[2]
 	insComp := args[3]
 	//--- check existance
-	found, clientIndex, err := checkClientInClientList(stub, hash)
+	found, _, err := checkClientInClientList(stub, hash)
 	if err != nil {
 		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
+	}
+	if !found {
+		return nil, errors.New("Client " + hash + " dosn't exist")
 	}
 	//-- update client record
 	// get client from state
