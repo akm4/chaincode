@@ -254,7 +254,7 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	}
 	oldClient.ModifyDate = time.Now()
 	//TODO need analyze correct status
-	oldClient.Status = STATUS_DELETED
+	oldClient.Status = status
 	//put client record to state
 	clientAsBytes, err = json.Marshal(&oldClient)
 	if err != nil {
