@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
-	//"strconv"
 	//"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -27,6 +27,7 @@ var (
 const ACTION_INSERT = "insert"
 const ACTION_UPDATE = "update"
 const ACTION_DELETE = "delete"
+const ACTION_SEARCH = "search"
 
 const STATUS_DELETED = "deleted"
 
@@ -46,6 +47,12 @@ type Client struct {
 	ModifyDate time.Time `json:"modifyDate"`
 	Hash       string    `json:hash`
 	//History    []Action  `json:"history"`
+}
+
+type SearchResult struct {
+	Existence     bool     `json:existence`
+	History       []Action `json:history`
+	CurrentStatus string   `json:currentStatus`
 }
 
 // MAIN
@@ -109,6 +116,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.deleteClient(stub, args)
 	} else if function == "updateClient" { // update a client
 		return t.updateClient(stub, args)
+	} else if function == "searchClient" {
+		return t.searchClient(stub, args)
 	}
 	return nil, errors.New("Received unknown function invocation")
 }
@@ -175,7 +184,7 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 	//------ check client in list
 	found, clientIndex, err := checkClientInClientList(stub, hash)
 	if err != nil {
-		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
+		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
 	}
 	if found {
 		//TODO maybe replace instead of return error ???
@@ -224,10 +233,10 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	status := args[1]
 	user := args[2]
 	insComp := args[3]
-	//--- check existance
+	//--- check existence
 	found, _, err := checkClientInClientList(stub, hash)
 	if err != nil {
-		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
+		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
 	}
 	if !found {
 		return nil, errors.New("Client " + hash + " dosn't exist")
@@ -272,10 +281,10 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	user := args[1]
 	insComp := args[2]
 
-	//-- check existance
+	//-- check existence
 	found, clientIndex, err := checkClientInClientList(stub, hash)
 	if err != nil {
-		return nil, errors.New("Error checking existance of " + hash + " :" + err.Error())
+		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
 	}
 	if !found {
 		return nil, errors.New("Client " + hash + " doesn't exist")
@@ -323,6 +332,60 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	return nil, nil
 }
 
+func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	//parse parameters  - need 3
+	if len(args) < 3 {
+		return nil, errors.New("incorrect number of arguments. need 3")
+	}
+	hash := args[0]
+	user := args[1]
+	insComp := args[2]
+
+	res := &SearchResult{}
+	//check existence
+	found, _, err := checkClientInClientList(stub, hash)
+	if err != nil {
+		return nil, err
+	}
+	if found { // if exists
+		// get client from state
+		clientAsBytes, err := stub.GetState(clientPrfx + hash)
+		if err != nil {
+			return nil, errors.New("Error getting client " + hash + " from state")
+		}
+		var oldClient Client
+		err = json.Unmarshal(clientAsBytes, &oldClient)
+		if err != nil {
+			return nil, errors.New("Error unmarshalling client " + hash + " from state")
+		}
+		//fill response record
+		res.CurrentStatus = oldClient.Status
+		res.Existence = true
+	}
+	//getHistory for result
+	var history []Action
+	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
+	if err != nil {
+		return nil, errors.New("Error getting history for client " + hash)
+	}
+	if historyBytes != nil {
+		err = json.Unmarshal(historyBytes, &history)
+		if err != nil {
+			return nil, errors.New("Error unmarshalling history for client " + hash)
+		}
+	}
+	//assign to result
+	res.History = history
+	//add record to history
+	err = addHistoryRecord(stub, hash, ACTION_SEARCH, user, insComp, strconv.FormatBool(found))
+	if err != nil {
+		return nil, err
+	}
+	resBytes, _ := json.Marshal(res)
+	return resBytes, nil
+}
+
 func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
 	var clientIndex []string
 	var found bool
@@ -361,12 +424,12 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	//chaincodeLogger.Info("current list: " + string(historyBytes))
 	fmt.Println("current list: " + string(historyBytes))
 	if err != nil {
-		return errors.New("Error getting history for client")
+		return errors.New("Error getting history for client ")
 	}
 	if historyBytes != nil {
 		err = json.Unmarshal(historyBytes, &history)
 		if err != nil {
-			return errors.New("Error unmarshalling history for client")
+			return errors.New("Error unmarshalling history for client ")
 		}
 	}
 	newAction := &Action{}
@@ -391,12 +454,12 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 
 //------------------------- TODO list----------------------
 // ++ 1.  Add logger
-// 2.  Add method for search (with history record )
+// 2.  Add method for search (with update history record)
 // ++ 3.  Covert string value to const
 // ++ 4.  add method for client "delete"
-// ++ 5.  add method for replacing code for client existance to function
+// ++ 5.  add method for replacing code for client existence to function
 // ++ 6. make method for  client update
-// 7. Delete State  istead of remove form array in Delete method - need check version of HL
+// -- 7. Delete State  istead of remove from array in Delete method - need check version of HL  -here is not applicable
 // 8. Refactor Delete method - change to update+delete from list
-// 9. Refactor insert and update methods to isertAndUpdate
+// 9. Refactor insert and update methods to createOrUpdate
 //---------------------------------------------------------
