@@ -389,7 +389,6 @@ func (t *SimpleChaincode) bulkInsert(stub shim.ChaincodeStubInterface, args []st
 }
 
 func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	maxRecord, _ := strconv.Atoi(args[0])
 	var tupples [][]string
 	i := 0
 	keysIter, err := stub.RangeQueryState("", "~")
