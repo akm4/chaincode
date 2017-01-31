@@ -373,13 +373,18 @@ func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []
 }
 
 func (t *SimpleChaincode) bulkInsert(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	maxRecord, _ := strconv.Atoi(args[0])
+	start := time.Now()
+
 	defer timeTrack(time.Now(), "bulk")
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < maxRecord; i++ {
 		err := putNewClientInState(stub, "ID"+strconv.Itoa(i), time.Now(), "bulk")
 		if err != nil {
 			return nil, errors.New("error creatin record")
 		}
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("Bulk took %s", elapsed)
 	return nil, nil
 }
 
@@ -462,6 +467,7 @@ func putNewClientInState(stub shim.ChaincodeStubInterface, hash string, modifyDa
 	if err != nil {
 		return errors.New("Error creating new client")
 	}
+	fmt.Println("put record for " + hash)
 	return nil
 }
 
