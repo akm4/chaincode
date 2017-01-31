@@ -93,6 +93,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.read(stub, args)
 	} else if function == "printClientHistory" { // read history of client from state
 		return t.printClientHistory(stub, args)
+	} else if function == "iterateState" {
+		return t.iterateState(stub, args)
 	}
 
 	//chaincodeLogger.Error("query did not find func: " + function) //error
@@ -375,17 +377,42 @@ func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []
 func (t *SimpleChaincode) bulkInsert(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	maxRecord, _ := strconv.Atoi(args[0])
 	start := time.Now()
-
-	defer timeTrack(time.Now(), "bulk")
 	for i := 0; i < maxRecord; i++ {
 		err := putNewClientInState(stub, "ID"+strconv.Itoa(i), time.Now(), "bulk")
 		if err != nil {
 			return nil, errors.New("error creatin record")
 		}
 	}
-	elapsed := time.Since(start)
-	fmt.Printf("Bulk took %s", elapsed)
+	end := time.Now()
+	fmt.Println("Bulk took " + end.Sub(start).String())
 	return nil, nil
+}
+
+func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	maxRecord, _ := strconv.Atoi(args[0])
+	var tupples [][]string
+	i := 0
+	keysIter, err := stub.RangeQueryState("", "~")
+	if err != nil {
+		return nil, errors.New("Unable to start the iterator")
+	}
+
+	defer keysIter.Close()
+
+	for keysIter.HasNext() {
+		key, val, iterErr := keysIter.Next()
+		if iterErr != nil {
+			return nil, fmt.Errorf("keys operation failed. Error accessing state: %s", err)
+		}
+		tupple := []string{key, string(val)}
+		tupples = append(tupples, tupple)
+		i++
+	}
+	tupple := []string{"all", strconv.Itoa(i)}
+	tupples = append(tupples, tupple)
+
+	marshalledTupples, err := json.Marshal(tupples)
+	return []byte(marshalledTupples), nil
 }
 
 func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
