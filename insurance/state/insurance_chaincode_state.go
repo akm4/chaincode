@@ -118,7 +118,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.updateClient(stub, args)
 	} else if function == "searchClient" {
 		return t.searchClient(stub, args)
+	} else if function == "bulkInsert" {
+		return t.bulkInsert(stub, args)
 	}
+
 	return nil, errors.New("Received unknown function invocation")
 }
 
