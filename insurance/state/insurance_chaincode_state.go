@@ -191,19 +191,10 @@ func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("client " + hash + " already exists")
 	}
 	//-----add client hash to state
-	//create new client record
-	newClient := &Client{}
-	newClient.ModifyDate = time.Now()
-	//TODO maybe need const = SUSP ???
-	newClient.Status = status
-	newClient.Hash = hash
-	newClientAsBytes, err := json.Marshal(&newClient)
+	//maybe status= const SUSP ???
+	err = putNewClientInState(stub, hash, time.Now(), status)
 	if err != nil {
-		return nil, errors.New("Error creating new client")
-	}
-	err = stub.PutState(clientPrfx+hash, newClientAsBytes)
-	if err != nil {
-		return nil, errors.New("Error creating new client")
+		return nil, errors.New("error creating client")
 	}
 	//------add record to client history
 	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, status)
@@ -252,18 +243,14 @@ func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return nil, errors.New("Error unmarshalling client " + hash + " from state")
 	}
-	oldClient.ModifyDate = time.Now()
 	//TODO need analyze correct status
-	oldClient.Status = status
-	//put client record to state
-	clientAsBytes, err = json.Marshal(&oldClient)
-	if err != nil {
-		return nil, errors.New("Error marshalling updated client " + hash)
-	}
-	err = stub.PutState(clientPrfx+hash, clientAsBytes)
+	//oldClient.ModifyDate = time.Now()
+	//oldClient.Status = status
+	err = putNewClientInState(stub, hash, time.Now(), status)
 	if err != nil {
 		return nil, errors.New("Error putting updated client " + hash + " to state")
 	}
+
 	//--add history record
 	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, insComp, status)
 	if err != nil {
@@ -300,17 +287,13 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return nil, errors.New("Error unmarshalling client " + hash + " from state")
 	}
-	oldClient.ModifyDate = time.Now()
 	//TODO need analyze if already deleted ???
-	oldClient.Status = STATUS_DELETED
+	//oldClient.ModifyDate = time.Now()
+	//oldClient.Status = STATUS_DELETED
 	//put client record to state
-	clientAsBytes, err = json.Marshal(&oldClient)
+	err = putNewClientInState(stub, hash, time.Now(), STATUS_DELETED)
 	if err != nil {
-		return nil, errors.New("Error marshalling updated client " + hash)
-	}
-	err = stub.PutState(clientPrfx+hash, clientAsBytes)
-	if err != nil {
-		return nil, errors.New("Error putting updated client " + hash + " to state")
+		return nil, errors.New("Error putting deleted record " + hash + " to state")
 	}
 	//--add history record
 	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, insComp, STATUS_DELETED)
@@ -386,6 +369,17 @@ func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []
 	return resBytes, nil
 }
 
+func (t *SimpleChaincode) bulkInsert(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	defer timeTrack(time.Now(), "bulk")
+	for i := 0; i < 1000; i++ {
+		err := putNewClientInState(stub, "ID"+strconv.Itoa(i), time.Now(), "bulk")
+		if err != nil {
+			return nil, errors.New("error creatin record")
+		}
+	}
+	return nil, nil
+}
+
 func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
 	var clientIndex []string
 	var found bool
@@ -452,14 +446,36 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	return nil
 }
 
+func putNewClientInState(stub shim.ChaincodeStubInterface, hash string, modifyDate time.Time, status string) error {
+	newClient := &Client{}
+	newClient.ModifyDate = modifyDate
+	newClient.Status = status
+	newClient.Hash = hash
+	newClientAsBytes, err := json.Marshal(&newClient)
+	if err != nil {
+		return errors.New("Error creating new client")
+	}
+	err = stub.PutState(clientPrfx+hash, newClientAsBytes)
+	if err != nil {
+		return errors.New("Error creating new client")
+	}
+	return nil
+}
+
+func timeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	fmt.Printf("%s took %s", name, elapsed)
+}
+
 //------------------------- TODO list----------------------
 // ++ 1.  Add logger
-// 2.  Add method for search (with update history record)
+// ++ 2.  Add method for search (with update history record)
 // ++ 3.  Covert string value to const
 // ++ 4.  add method for client "delete"
 // ++ 5.  add method for replacing code for client existence to function
 // ++ 6. make method for  client update
 // -- 7. Delete State  istead of remove from array in Delete method - need check version of HL  -here is not applicable
-// 8. Refactor Delete method - change to update+delete from list
-// 9. Refactor insert and update methods to createOrUpdate
+// ++ 8. Refactor Delete method - change to update state +delete from list
+// ++ 9. Refactor insert and update methods to createOrUpdate
+// 10. Separate history to actions and searches
 //---------------------------------------------------------
