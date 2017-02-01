@@ -401,7 +401,7 @@ func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []
 	defer keysIter.Close()
 
 	for keysIter.HasNext() {
-		key, val, iterErr := keysIter.Next()
+		_, _, iterErr := keysIter.Next()
 		if iterErr != nil {
 			return nil, fmt.Errorf("keys operation failed. Error accessing state: %s", err)
 		}
