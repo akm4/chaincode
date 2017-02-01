@@ -423,13 +423,18 @@ func (t *SimpleChaincode) runTimer(stub shim.ChaincodeStubInterface, args []stri
 		fmt.Println("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
 		return nil, errors.New("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
 	}
+	start := time.Now()
+	fmt.Println(start.String() + "before sleep")
 	sleepTime := time.Duration(aucDuration * 1000 * 1000 * 1000)
 	go func(sleeptime time.Duration) ([]byte, error) {
 		fmt.Println("OpenAuctionForBids(): Sleeping for ", sleeptime)
 		time.Sleep(sleeptime)
-		fmt.Println("all right")
+		end := time.Now()
+		fmt.Println(end.String() + "all right for " + end.Sub(start).String())
+		stub.PutState("test", []byte("2"))
 		return nil, err
 	}(sleepTime)
+	stub.PutState("test", []byte("1"))
 	return nil, nil
 }
 
