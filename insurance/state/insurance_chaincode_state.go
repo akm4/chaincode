@@ -122,6 +122,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.searchClient(stub, args)
 	} else if function == "bulkInsert" {
 		return t.bulkInsert(stub, args)
+	} else if function == "runTimer" {
+		return t.runTimer(stub, args)
 	}
 
 	return nil, errors.New("Received unknown function invocation")
@@ -403,8 +405,8 @@ func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []
 		if iterErr != nil {
 			return nil, fmt.Errorf("keys operation failed. Error accessing state: %s", err)
 		}
-		tupple := []string{key, string(val)}
-		tupples = append(tupples, tupple)
+		//tupple := []string{key, string(val)}
+		//tupples = append(tupples, tupple)
 		i++
 	}
 	tupple := []string{"all", strconv.Itoa(i)}
@@ -412,6 +414,23 @@ func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []
 
 	marshalledTupples, err := json.Marshal(tupples)
 	return []byte(marshalledTupples), nil
+}
+
+func (t *SimpleChaincode) runTimer(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	// Validate arg[1]  is an integer as it represents Duration in seconds
+	aucDuration, err := strconv.Atoi(args[0])
+	if err != nil {
+		fmt.Println("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
+		return nil, errors.New("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
+	}
+	sleepTime := time.Duration(aucDuration * 1000 * 1000 * 1000)
+	go func(sleeptime time.Duration) ([]byte, error) {
+		fmt.Println("OpenAuctionForBids(): Sleeping for ", sleeptime)
+		time.Sleep(sleeptime)
+		fmt.Println("all right")
+		return nil, err
+	}(sleepTime)
+	return nil, nil
 }
 
 func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
