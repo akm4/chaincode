@@ -377,16 +377,13 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 
 func createOrUpdatePerson(stub shim.ChaincodeStubInterface, hash string, newPerson Person) error {
 	var oldPerson Person
-	var found bool
 	//retrieve Person from state by hash
 	personBytes, err := stub.GetState(personPrfx + hash)
 	if err != nil || len(personBytes) == 0 {
 		//data not found, create scenario
-		found = false
 		oldPerson = newPerson
 	} else {
 		//update scenario
-		found = true
 		err = json.Unmarshal(personBytes, &oldPerson)
 		if err != nil {
 			return errors.New("error unmarshalling person from state")
