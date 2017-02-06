@@ -8,7 +8,7 @@ import (
 	"time"
 	//"strings"
 	"crypto/sha256"
-	"reflect"
+	//"reflect"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
