@@ -7,34 +7,33 @@ import (
 	"strconv"
 	"time"
 	//"strings"
+	"crypto/sha256"
+	"reflect"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	//"github.com/op/go-logging"
 )
-
-//logger - not in v0.6
-//var chaincodeLogger = logging.MustGetLogger("insurance")
 
 var (
-	// prefix for saving client data
-	clientPrfx = "Client:"
-	// prefix for saving history of client
-	clientHistoryPrfx = "ClientHistory:"
-	//key for saving client List
-	clientListKey = "ClientListKey"
+	// prefix for saving person data
+	personPrfx = "Person:"
+	// prefix for saving history of person
+	personHistoryPrfx = "PersonHistory:"
 )
 
-const ACTION_INSERT = "insert"
+const ACTION_INSERT = "create"
 const ACTION_UPDATE = "update"
 const ACTION_DELETE = "delete"
 const ACTION_SEARCH = "search"
 
+const STATUS_OK = "ok"
+const STATUS_SUSP = "suspicious"
 const STATUS_DELETED = "deleted"
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
 
+//type for audit record
 type Action struct {
 	InsuranceCompany string    `json:"insuranceCompany"`
 	User             string    `json:"user"`
@@ -42,91 +41,109 @@ type Action struct {
 	Date             time.Time `json:"date"`
 	NewStatus        string    `json:newStatus`
 }
-type Client struct {
-	Status     string    `json:"status"`
-	ModifyDate time.Time `json:"modifyDate"`
-	Hash       string    `json:hash`
-	//History    []Action  `json:"history"`
+
+//type for person data
+type Person struct {
+	Hash       string       `json:hash`
+	Status     string       `json:"status"`
+	ModifyDate time.Time    `json:"modifyDate"`
+	PersData   PersonalData `json:"personalData"`
 }
 
+// type for personal data block
+//TODO maybe remove for security considerations ???
+type PersonalData struct {
+	FirstName  string `json:"firstName"`
+	MiddleName string `json:"middleName"`
+	LastName   string `json:"lastName"`
+	Day        int    `json:"day"`
+	Month      int    `json:"month"`
+	Year       int    `json:"year"`
+}
+
+//type for result of search request
 type SearchResult struct {
 	Existence     bool     `json:existence`
-	History       []Action `json:history`
 	CurrentStatus string   `json:currentStatus`
+	History       []Action `json:history`
 }
 
-// MAIN
+//---------------------------------------------------- MAIN
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		//chaincodeLogger.Error("Error starting Simple chaincode: %s", err)
 		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
-//SHIM - INIT
+//---------------------------------------------------SHIM - INIT
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//check arguments length
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
-	//TODO reset all list
-	var blank []string
-	blankBytes, _ := json.Marshal(&blank)
-	err := stub.PutState(clientListKey, blankBytes)
-	if err != nil {
-		//chaincodeLogger.Error("Failed to initialize client list")
-		fmt.Println("Failed to initialize client list")
-	}
 	return nil, nil
 
 }
 
-// SHIM - QUERY
+//--------------------------------------------------- SHIM - QUERY
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	// Handle different functions
-	if function == "printClient" { //read client by hash
-		return t.printClient(stub, args)
-	} else if function == "printClientList" { // read all clients hash from state
-		return t.printClientList(stub, args)
+	if function == "getPersonInfo" { //read person by hash
+		return t.getPersonInfo(stub, args)
 	} else if function == "read" { // read data by name from state
 		return t.read(stub, args)
-	} else if function == "printClientHistory" { // read history of client from state
-		return t.printClientHistory(stub, args)
-	} else if function == "iterateState" {
-		return t.iterateState(stub, args)
+	} else if function == "getPersonHistory" { // read history of person from state
+		return t.getPersonHistory(stub, args)
+	} else if function == "calculateHash" {
+		return t.calculatePersonHash(stub, args)
 	}
 
-	//chaincodeLogger.Error("query did not find func: " + function) //error
 	fmt.Println("query did not find func: " + function)
 
 	return nil, errors.New("Received unknown function query")
 }
 
-//SHIM - INVOKE
+//---------------------------------------------SHIM - INVOKE
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//chaincodeLogger.Info("Invoke is running this function :" + function)
 	fmt.Println("Invoke is running this function :" + function)
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
 	} else if function == "write" {
 		return t.write(stub, args)
-	} else if function == "insertClient" { //create a new client
-		return t.insertClient(stub, args)
-	} else if function == "deleteClient" { //delete a client
-		return t.deleteClient(stub, args)
-	} else if function == "updateClient" { // update a client
-		return t.updateClient(stub, args)
-	} else if function == "searchClient" {
-		return t.searchClient(stub, args)
-	} else if function == "bulkInsert" {
-		return t.bulkInsert(stub, args)
-	} else if function == "runTimer" {
-		return t.runTimer(stub, args)
+	} else if function == "insertPerson" { //create a new person
+		return t.insertPerson(stub, args)
+	} else if function == "deletePerson" { //delete a person
+		return t.deletePerson(stub, args)
+	} else if function == "updatePerson" { // update a person
+		return t.updatePerson(stub, args)
+	} else if function == "searchPerson" {
+		return t.searchPerson(stub, args)
 	}
 
 	return nil, errors.New("Received unknown function invocation")
+}
+
+//--------------------calculatePersonHash. Params:
+// firstName
+// middleName
+// lastName
+// day
+// month
+// year
+func (t *SimpleChaincode) calculatePersonHash(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 6")
+	}
+	firstName := args[0]
+	middleName := args[1]
+	lastName := args[2]
+	day := args[3]
+	month := args[4]
+	year := args[5]
+	//concat params
+	return calcHashByParams(firstName, middleName, lastName, day, month, year), nil
 }
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
@@ -146,127 +163,102 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 	return nil, stub.PutState(key, val)
 }
 
-//print client data by hash
-func (t *SimpleChaincode) printClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+//print person data by hash
+func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 1
 	if len(args) != 1 {
 		return nil, errors.New("incorrect number of arguments. need 1")
 	}
 	hash := args[0]
-	//get client from state
-	res, err := stub.GetState(clientPrfx + hash)
+	//get person from state
+	res, err := stub.GetState(personPrfx + hash)
 	return res, err
 }
 
-//print client history by hash
-func (t *SimpleChaincode) printClientHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+//print person history by hash
+func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 1
 	if len(args) != 1 {
 		return nil, errors.New("incorrect number of arguments. need 1")
 	}
 	hash := args[0]
-	//get client from state
-	res, err := stub.GetState(clientHistoryPrfx + hash)
+	//get person from state
+	res, err := stub.GetState(personHistoryPrfx + hash)
 	return res, err
 }
 
-// print client list
-func (t *SimpleChaincode) printClientList(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	res, err := stub.GetState(clientListKey)
-	if err != nil {
-		return nil, err
-	}
-	return res, err
-}
-
-func (t *SimpleChaincode) insertClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
 	if len(args) < 4 {
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
-	status := args[1]
 	user := args[2]
 	insComp := args[3]
-	//------ check client in list
-	found, clientIndex, err := checkClientInClientList(stub, hash)
+	//PersonalData
+	firstName := args[4]
+	middleName := args[5]
+	lastName := args[6]
+	day, err := strconv.Atoi(args[8])
+	month, err := strconv.Atoi(args[8])
+	year, err := strconv.Atoi(args[9])
 	if err != nil {
-		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
+		return nil, errors.New("invalid parameters")
 	}
-	if found {
-		//TODO maybe replace instead of return error ???
-		return nil, errors.New("client " + hash + " already exists")
-	}
-	//-----add client hash to state
-	//maybe status= const SUSP ???
-	err = putNewClientInState(stub, hash, time.Now(), status)
+	//-----add person hash to state
+	newPerson := &Person{}
+	newPerson.Hash = hash
+	newPerson.ModifyDate = time.Now()
+	newPerson.Status = STATUS_SUSP
+	newPersonData := &PersonalData{}
+	newPersonData.FirstName = firstName
+	newPersonData.LastName = lastName
+	newPersonData.MiddleName = middleName
+	newPersonData.Day = day
+	newPersonData.Month = month
+	newPersonData.Year = year
+	newPerson.PersData = *newPersonData
+	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
-		return nil, errors.New("error creating client")
+		return nil, errors.New("error inserting person")
 	}
-	//------add record to client history
-	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, status)
+	//------add record to person history
+	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, STATUS_SUSP)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
-	}
-	//------add client to client list
-	clientIndex = append(clientIndex, hash)
-	clientListAsBytesToWrite, err := json.Marshal(&clientIndex)
-	if err != nil {
-		return nil, errors.New("Error marshalling the client list")
-	}
-	err = stub.PutState(clientListKey, clientListAsBytesToWrite)
-	if err != nil {
-		return nil, errors.New("Error saving the client list")
 	}
 
 	return nil, nil
 }
 
-func (t *SimpleChaincode) updateClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
 	if len(args) < 4 {
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
-	status := args[1]
 	user := args[2]
 	insComp := args[3]
-	//--- check existence
-	found, _, err := checkClientInClientList(stub, hash)
+	status := args[4]
+	//-----add person hash to state
+	newPerson := &Person{}
+	newPerson.Hash = hash
+	newPerson.ModifyDate = time.Now()
+	newPerson.Status = status
+	err := createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
-		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
+		return nil, errors.New("error updating person")
 	}
-	if !found {
-		return nil, errors.New("Client " + hash + " dosn't exist")
-	}
-	//-- update client record
-	// get client from state
-	clientAsBytes, err := stub.GetState(clientPrfx + hash)
-	if err != nil {
-		return nil, errors.New("Error getting client " + hash + " from state")
-	}
-	var oldClient Client
-	err = json.Unmarshal(clientAsBytes, &oldClient)
-	if err != nil {
-		return nil, errors.New("Error unmarshalling client " + hash + " from state")
-	}
-	//TODO need analyze correct status
-	//oldClient.ModifyDate = time.Now()
-	//oldClient.Status = status
-	err = putNewClientInState(stub, hash, time.Now(), status)
-	if err != nil {
-		return nil, errors.New("Error putting updated client " + hash + " to state")
-	}
-
-	//--add history record
+	//------add record to person history
 	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, insComp, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
+
 	return nil, nil
 }
 
-func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 3
 	if len(args) < 3 {
 		return nil, errors.New("incorrect number of arguments. need 3")
@@ -274,55 +266,25 @@ func (t *SimpleChaincode) deleteClient(stub shim.ChaincodeStubInterface, args []
 	hash := args[0]
 	user := args[1]
 	insComp := args[2]
-
-	//-- check existence
-	found, clientIndex, err := checkClientInClientList(stub, hash)
+	//TODO maybe check existence ???
+	//-----add person hash to state
+	newPerson := &Person{}
+	newPerson.Hash = hash
+	newPerson.ModifyDate = time.Now()
+	newPerson.Status = STATUS_DELETED
+	err := createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
-		return nil, errors.New("Error checking existence of " + hash + " :" + err.Error())
+		return nil, errors.New("error updating person")
 	}
-	if !found {
-		return nil, errors.New("Client " + hash + " doesn't exist")
-	}
-	//-- update client record
-	// get client from state
-	clientAsBytes, err := stub.GetState(clientPrfx + hash)
-	if err != nil {
-		return nil, errors.New("Error getting client " + hash + " from state")
-	}
-	var oldClient Client
-	err = json.Unmarshal(clientAsBytes, &oldClient)
-	if err != nil {
-		return nil, errors.New("Error unmarshalling client " + hash + " from state")
-	}
-	//TODO need analyze if already deleted ???
-	//oldClient.ModifyDate = time.Now()
-	//oldClient.Status = STATUS_DELETED
-	//put client record to state
-	err = putNewClientInState(stub, hash, time.Now(), STATUS_DELETED)
-	if err != nil {
-		return nil, errors.New("Error putting deleted record " + hash + " to state")
-	}
-	//--add history record
+	//------add record to person history
 	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, insComp, STATUS_DELETED)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
-	//delete from client list
-	for i := range clientIndex {
-		if clientIndex[i] == hash {
-			clientIndex = append(clientIndex[:i], clientIndex[i+1:]...)
-			clientIndexAsBytes, _ := json.Marshal(clientIndex)
-			err = stub.PutState(clientListKey, clientIndexAsBytes)
-			if err != nil {
-				return nil, errors.New("Error deleting  record for " + hash + " from state")
-			}
-			break
-		}
-	}
 	return nil, nil
 }
 
-func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	//parse parameters  - need 3
 	if len(args) < 3 {
@@ -334,35 +296,30 @@ func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []
 
 	res := &SearchResult{}
 	//check existence
-	found, _, err := checkClientInClientList(stub, hash)
-	if err != nil {
-		return nil, err
-	}
+	var found bool
+	//retrieve Person from state by hash
+	personBytes, err := stub.GetState(personPrfx + hash)
+	found = err == nil && len(personBytes) != 0
 	if found { // if exists
-		// get client from state
-		clientAsBytes, err := stub.GetState(clientPrfx + hash)
+		var oldperson Person
+		err = json.Unmarshal(personBytes, &oldperson)
 		if err != nil {
-			return nil, errors.New("Error getting client " + hash + " from state")
-		}
-		var oldClient Client
-		err = json.Unmarshal(clientAsBytes, &oldClient)
-		if err != nil {
-			return nil, errors.New("Error unmarshalling client " + hash + " from state")
+			return nil, errors.New("Error unmarshalling person " + hash + " from state")
 		}
 		//fill response record
-		res.CurrentStatus = oldClient.Status
+		res.CurrentStatus = oldperson.Status
 		res.Existence = true
 	}
 	//getHistory for result
 	var history []Action
-	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
+	historyBytes, err := stub.GetState(personHistoryPrfx + hash)
 	if err != nil {
-		return nil, errors.New("Error getting history for client " + hash)
+		return nil, errors.New("Error getting history for person " + hash)
 	}
 	if historyBytes != nil {
 		err = json.Unmarshal(historyBytes, &history)
 		if err != nil {
-			return nil, errors.New("Error unmarshalling history for client " + hash)
+			return nil, errors.New("Error unmarshalling history for person " + hash)
 		}
 	}
 	//assign to result
@@ -376,92 +333,6 @@ func (t *SimpleChaincode) searchClient(stub shim.ChaincodeStubInterface, args []
 	return resBytes, nil
 }
 
-func (t *SimpleChaincode) bulkInsert(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	maxRecord, _ := strconv.Atoi(args[0])
-	start := time.Now()
-	for i := 0; i < maxRecord; i++ {
-		err := putNewClientInState(stub, "ID"+strconv.Itoa(i), time.Now(), "bulk")
-		if err != nil {
-			return nil, errors.New("error creatin record")
-		}
-	}
-	end := time.Now()
-	fmt.Println("Bulk took " + end.Sub(start).String())
-	return nil, nil
-}
-
-func (t *SimpleChaincode) iterateState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	var tupples [][]string
-	i := 0
-	keysIter, err := stub.RangeQueryState("", "~")
-	if err != nil {
-		return nil, errors.New("Unable to start the iterator")
-	}
-
-	defer keysIter.Close()
-
-	for keysIter.HasNext() {
-		_, _, iterErr := keysIter.Next()
-		if iterErr != nil {
-			return nil, fmt.Errorf("keys operation failed. Error accessing state: %s", err)
-		}
-		//tupple := []string{key, string(val)}
-		//tupples = append(tupples, tupple)
-		i++
-	}
-	tupple := []string{"all", strconv.Itoa(i)}
-	tupples = append(tupples, tupple)
-
-	marshalledTupples, err := json.Marshal(tupples)
-	return []byte(marshalledTupples), nil
-}
-
-func (t *SimpleChaincode) runTimer(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	// Validate arg[1]  is an integer as it represents Duration in seconds
-	aucDuration, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Println("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
-		return nil, errors.New("OpenAuctionForBids(): Auction Duration is an integer that represents minute! OpenAuctionForBids() Failed ")
-	}
-	start := time.Now()
-	fmt.Println(start.String() + "before sleep")
-	sleepTime := time.Duration(aucDuration * 1000 * 1000 * 1000)
-	go func(sleeptime time.Duration) ([]byte, error) {
-		fmt.Println("OpenAuctionForBids(): Sleeping for ", sleeptime)
-		time.Sleep(sleeptime)
-		end := time.Now()
-		fmt.Println(end.String() + "all right for " + end.Sub(start).String())
-		stub.PutState("test", []byte("2"))
-		return nil, err
-	}(sleepTime)
-	stub.PutState("test", []byte("1"))
-	return nil, nil
-}
-
-func checkClientInClientList(stub shim.ChaincodeStubInterface, hash string) (bool, []string, error) {
-	var clientIndex []string
-	var found bool
-	clientListAsBytes, err := stub.GetState(clientListKey)
-	//chaincodeLogger.Info("current list: " + string(clientListAsBytes))
-	fmt.Println("current list: " + string(clientListAsBytes))
-	if err != nil {
-		return found, nil, errors.New("failed get client list")
-	}
-	if clientListAsBytes != nil {
-		err = json.Unmarshal(clientListAsBytes, &clientIndex)
-		if err != nil {
-			return found, nil, errors.New("failed unmarshalling client list")
-		}
-		for _, v := range clientIndex {
-			if v == hash {
-				found = true
-				break
-			}
-		}
-	}
-	return found, clientIndex, nil
-}
-
 /*****************
 stub shim.ChaincodeStubInterface
 hash string
@@ -472,16 +343,16 @@ status string
 ******************/
 func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, insuranceCompany string, status string) error {
 	var history []Action
-	historyBytes, err := stub.GetState(clientHistoryPrfx + hash)
+	historyBytes, err := stub.GetState(personHistoryPrfx + hash)
 	//chaincodeLogger.Info("current list: " + string(historyBytes))
 	fmt.Println("current list: " + string(historyBytes))
 	if err != nil {
-		return errors.New("Error getting history for client ")
+		return errors.New("Error getting history for person ")
 	}
 	if historyBytes != nil {
 		err = json.Unmarshal(historyBytes, &history)
 		if err != nil {
-			return errors.New("Error unmarshalling history for client ")
+			return errors.New("Error unmarshalling history for person ")
 		}
 	}
 	newAction := &Action{}
@@ -495,44 +366,89 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	//put history to state
 	newHistoryBytes, err := json.Marshal(&history)
 	if err != nil {
-		return errors.New("Error parsing history for client " + hash)
+		return errors.New("Error parsing history for person " + hash)
 	}
-	err = stub.PutState(clientHistoryPrfx+hash, newHistoryBytes)
+	err = stub.PutState(personHistoryPrfx+hash, newHistoryBytes)
 	if err != nil {
-		return errors.New("Error parsing history for client" + hash)
+		return errors.New("Error parsing history for person" + hash)
 	}
 	return nil
 }
 
-func putNewClientInState(stub shim.ChaincodeStubInterface, hash string, modifyDate time.Time, status string) error {
-	newClient := &Client{}
-	newClient.ModifyDate = modifyDate
-	newClient.Status = status
-	newClient.Hash = hash
-	newClientAsBytes, err := json.Marshal(&newClient)
-	if err != nil {
-		return errors.New("Error creating new client")
+func createOrUpdatePerson(stub shim.ChaincodeStubInterface, hash string, newPerson Person) error {
+	var oldPerson Person
+	var found bool
+	//retrieve Person from state by hash
+	personBytes, err := stub.GetState(personPrfx + hash)
+	if err != nil || len(personBytes) == 0 {
+		//data not found, create scenario
+		found = false
+		oldPerson = newPerson
+	} else {
+		//update scenario
+		found = true
+		err = json.Unmarshal(personBytes, &oldPerson)
+		if err != nil {
+			return errors.New("error unmarshalling person from state")
+		}
+		//merge data
+		oldPerson, err = mergePerson(oldPerson, newPerson)
+		if err != nil {
+			return errors.New("error mergin data of Person")
+		}
 	}
-	err = stub.PutState(clientPrfx+hash, newClientAsBytes)
+	//put Person in state
+	err = putPersonInState(stub, hash, oldPerson)
 	if err != nil {
-		return errors.New("Error creating new client")
+		return err
+	}
+	return nil
+}
+
+func mergePerson(oldPerson Person, newPerson Person) (Person, error) {
+	o := reflect.ValueOf(&oldPerson).Elem()
+	n := reflect.ValueOf(&newPerson).Elem()
+	for i := 0; i < o.NumField(); i++ {
+		oldOne := o.Field(i)
+		newOne := n.Field(i)
+		if !reflect.ValueOf(newOne.Interface()).IsNil() {
+			oldOne.Set(reflect.Value(newOne))
+		}
+	}
+	return oldPerson, nil
+}
+
+func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Person) error {
+	personAsBytes, err := json.Marshal(&person)
+	if err != nil {
+		return errors.New("Error marhalling new person")
+	}
+	err = stub.PutState(personPrfx+hash, personAsBytes)
+	if err != nil {
+		return errors.New("Error puttin new person")
 	}
 	fmt.Println("put record for " + hash)
 	return nil
 }
 
-func timeTrack(start time.Time, name string) {
-	elapsed := time.Since(start)
-	fmt.Printf("%s took %s", name, elapsed)
+func calcHashByParams(firstName string, middleName string, lastName string, day string, month string, year string) []byte {
+	return calcHash(firstName + middleName + lastName + day + month + year)
+}
+
+func calcHash(input string) []byte {
+	hash := sha256.New()
+	hash.Write([]byte(input))
+	md := hash.Sum(nil)
+	return md
 }
 
 //------------------------- TODO list----------------------
-// ++ 1.  Add logger
+// 1.  Add logger
 // ++ 2.  Add method for search (with update history record)
 // ++ 3.  Covert string value to const
-// ++ 4.  add method for client "delete"
-// ++ 5.  add method for replacing code for client existence to function
-// ++ 6. make method for  client update
+// ++ 4.  add method for person "delete"
+// ++ 5.  add method for replacing code for person existence to function
+// ++ 6. make method for  person update
 // -- 7. Delete State  istead of remove from array in Delete method - need check version of HL  -here is not applicable
 // ++ 8. Refactor Delete method - change to update state +delete from list
 // ++ 9. Refactor insert and update methods to createOrUpdate
