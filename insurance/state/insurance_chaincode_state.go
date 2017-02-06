@@ -44,21 +44,9 @@ type Action struct {
 
 //type for person data
 type Person struct {
-	Hash       string       `json:hash`
-	Status     string       `json:"status"`
-	ModifyDate time.Time    `json:"modifyDate"`
-	PersData   PersonalData `json:"personalData"`
-}
-
-// type for personal data block
-//TODO maybe remove for security considerations ???
-type PersonalData struct {
-	FirstName  string `json:"firstName"`
-	MiddleName string `json:"middleName"`
-	LastName   string `json:"lastName"`
-	Day        int    `json:"day"`
-	Month      int    `json:"month"`
-	Year       int    `json:"year"`
+	Hash       string    `json:hash`
+	Status     string    `json:"status"`
+	ModifyDate time.Time `json:"modifyDate"`
 }
 
 //type for result of search request
@@ -83,7 +71,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 	return nil, nil
-
 }
 
 //--------------------------------------------------- SHIM - QUERY
@@ -188,37 +175,19 @@ func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, arg
 }
 
 func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//parse parameters  - need 4
-	if len(args) < 4 {
+	//parse parameters  - need 3
+	if len(args) < 3 {
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
-	user := args[2]
-	insComp := args[3]
-	//PersonalData
-	firstName := args[4]
-	middleName := args[5]
-	lastName := args[6]
-	day, err := strconv.Atoi(args[8])
-	month, err := strconv.Atoi(args[8])
-	year, err := strconv.Atoi(args[9])
-	if err != nil {
-		return nil, errors.New("invalid parameters")
-	}
+	user := args[1]
+	insComp := args[2]
 	//-----add person hash to state
 	newPerson := &Person{}
-	newPerson.Hash = hash
 	newPerson.ModifyDate = time.Now()
 	newPerson.Status = STATUS_SUSP
-	newPersonData := &PersonalData{}
-	newPersonData.FirstName = firstName
-	newPersonData.LastName = lastName
-	newPersonData.MiddleName = middleName
-	newPersonData.Day = day
-	newPersonData.Month = month
-	newPersonData.Year = year
-	newPerson.PersData = *newPersonData
-	err = createOrUpdatePerson(stub, hash, *newPerson)
+	newPerson.Hash = hash
+	err := createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
 		return nil, errors.New("error inserting person")
 	}
@@ -227,7 +196,6 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
-
 	return nil, nil
 }
 
@@ -237,9 +205,9 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
-	user := args[2]
-	insComp := args[3]
-	status := args[4]
+	user := args[1]
+	insComp := args[2]
+	status := args[3]
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.Hash = hash
