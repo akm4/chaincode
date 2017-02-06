@@ -133,7 +133,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 // month
 // year
 func (t *SimpleChaincode) calculatePersonHash(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 1 {
+	if len(args) < 6 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 6")
 	}
 	firstName := args[0]
