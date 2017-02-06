@@ -356,8 +356,8 @@ func createOrUpdatePerson(stub shim.ChaincodeStubInterface, hash string, newPers
 		if err != nil {
 			return errors.New("error unmarshalling person from state")
 		}
-		//merge data
-		oldPerson, err = mergePerson(oldPerson, newPerson)
+		//TODO merge data, now only replace
+		oldPerson = newPerson
 		if err != nil {
 			return errors.New("error mergin data of Person")
 		}
@@ -370,18 +370,18 @@ func createOrUpdatePerson(stub shim.ChaincodeStubInterface, hash string, newPers
 	return nil
 }
 
-func mergePerson(oldPerson Person, newPerson Person) (Person, error) {
-	o := reflect.ValueOf(&oldPerson).Elem()
-	n := reflect.ValueOf(&newPerson).Elem()
-	for i := 0; i < o.NumField(); i++ {
-		oldOne := o.Field(i)
-		newOne := n.Field(i)
-		if !reflect.ValueOf(newOne.Interface()).IsNil() {
-			oldOne.Set(reflect.Value(newOne))
-		}
-	}
-	return oldPerson, nil
-}
+//func mergePerson(oldPerson Person, newPerson Person) (Person, error) {
+//	o := reflect.ValueOf(&oldPerson).Elem()
+//	n := reflect.ValueOf(&newPerson).Elem()
+//	for i := 0; i < o.NumField(); i++ {
+//		oldOne := o.Field(i)
+//		newOne := n.Field(i)
+//		if !reflect.ValueOf(newOne.Interface()).IsNil() {
+//			oldOne.Set(reflect.Value(newOne))
+//		}
+//	}
+//	return oldPerson, nil
+//}
 
 func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Person) error {
 	personAsBytes, err := json.Marshal(&person)
