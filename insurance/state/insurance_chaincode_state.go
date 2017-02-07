@@ -175,17 +175,18 @@ func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, arg
 }
 
 func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//parse parameters  - need 3
-	if len(args) < 3 {
+	//parse parameters  - need 4
+	if len(args) < 4 {
 		return nil, errors.New("incorrect number of arguments. need 4")
 	}
 	hash := args[0]
 	user := args[1]
 	insComp := args[2]
+	status := args[3]
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.ModifyDate = time.Now()
-	newPerson.Status = STATUS_SUSP
+	newPerson.Status = status
 	newPerson.Hash = hash
 	err := createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
