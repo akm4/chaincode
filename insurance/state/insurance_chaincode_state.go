@@ -409,14 +409,8 @@ func calcHash(input string) []byte {
 }
 
 //------------------------- TODO list----------------------
-// 1.  Add logger
-// ++ 2.  Add method for search (with update history record)
-// ++ 3.  Covert string value to const
-// ++ 4.  add method for person "delete"
-// ++ 5.  add method for replacing code for person existence to function
-// ++ 6. make method for  person update
-// -- 7. Delete State  istead of remove from array in Delete method - need check version of HL  -here is not applicable
-// ++ 8. Refactor Delete method - change to update state +delete from list
-// ++ 9. Refactor insert and update methods to createOrUpdate
-// 10. Separate history to actions and searches
+// 1. Add logger
+// 2. Separate history to actions and searches
+// 3. Reorder history - first should be latest
+// 4. Add info for search history record about actual person status (not only found\not found)
 //---------------------------------------------------------
