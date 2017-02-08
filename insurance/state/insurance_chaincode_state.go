@@ -193,7 +193,7 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("error inserting person")
 	}
 	//------add record to person history
-	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, STATUS_SUSP)
+	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
