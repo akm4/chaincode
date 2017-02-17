@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 	//"strings"
-	"crypto/sha256"
+	//"crypto/sha256"
 	//"reflect"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -82,9 +82,10 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.read(stub, args)
 	} else if function == "getPersonHistory" { // read history of person from state
 		return t.getPersonHistory(stub, args)
-	} else if function == "calculateHash" {
-		return t.calculatePersonHash(stub, args)
 	}
+	//	 else if function == "calculateHash" {
+	//		return t.calculatePersonHash(stub, args)
+	//	}
 
 	fmt.Println("query did not find func: " + function)
 
@@ -119,19 +120,19 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 // day
 // month
 // year
-func (t *SimpleChaincode) calculatePersonHash(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) < 6 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 6")
-	}
-	firstName := args[0]
-	middleName := args[1]
-	lastName := args[2]
-	day := args[3]
-	month := args[4]
-	year := args[5]
-	//concat params
-	return calcHashByParams(firstName, middleName, lastName, day, month, year), nil
-}
+//func (t *SimpleChaincode) calculatePersonHash(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+//	if len(args) < 6 {
+//		return nil, errors.New("Incorrect number of arguments. Expecting 6")
+//	}
+//	firstName := args[0]
+//	middleName := args[1]
+//	lastName := args[2]
+//	day := args[3]
+//	month := args[4]
+//	year := args[5]
+//	//concat params
+//	return calcHashByParams(firstName, middleName, lastName, day, month, year), nil
+//}
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
@@ -156,7 +157,16 @@ func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args [
 	if len(args) != 1 {
 		return nil, errors.New("incorrect number of arguments. need 1")
 	}
-	hash := args[0]
+	//hash := args[0]
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
+	}
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("get info fro person " + hash)
 	//get person from state
 	res, err := stub.GetState(personPrfx + hash)
 	return res, err
@@ -397,20 +407,13 @@ func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Pers
 	return nil
 }
 
-func calcHashByParams(firstName string, middleName string, lastName string, day string, month string, year string) []byte {
-	return calcHash(firstName + middleName + lastName + day + month + year)
-}
+//func calcHashByParams(firstName string, middleName string, lastName string, day string, month string, year string) []byte {
+//	return calcHash(firstName + middleName + lastName + day + month + year)
+//}
 
-func calcHash(input string) []byte {
-	hash := sha256.New()
-	hash.Write([]byte(input))
-	md := hash.Sum(nil)
-	return md
-}
-
-//------------------------- TODO list----------------------
-// 1. Add logger
-// 2. Separate history to actions and searches
-// 3. Reorder history - first should be latest
-// 4. Add info for search history record about actual person status (not only found\not found)
-//---------------------------------------------------------
+//func calcHash(input string) []byte {
+//	hash := sha256.New()
+//	hash.Write([]byte(input))
+//	md := hash.Sum(nil)
+//	return md
+//}
