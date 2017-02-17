@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 	//"strings"
-	//"crypto/sha256"
-	//"reflect"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -113,27 +111,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	return nil, errors.New("Received unknown function invocation")
 }
 
-//--------------------calculatePersonHash. Params:
-// firstName
-// middleName
-// lastName
-// day
-// month
-// year
-//func (t *SimpleChaincode) calculatePersonHash(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-//	if len(args) < 6 {
-//		return nil, errors.New("Incorrect number of arguments. Expecting 6")
-//	}
-//	firstName := args[0]
-//	middleName := args[1]
-//	lastName := args[2]
-//	day := args[3]
-//	month := args[4]
-//	year := args[5]
-//	//concat params
-//	return calcHashByParams(firstName, middleName, lastName, day, month, year), nil
-//}
-
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -154,11 +131,6 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 //print person data by hash
 func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 1
-	if len(args) != 1 {
-		//return nil, errors.New("incorrect number of arguments." + strconv.Itoa(len(args)) + " need 1")
-		fmt.Println("incorrect number of arguments." + strconv.Itoa(len(args)) + " need 1")
-	}
-	//hash := args[0]
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
 		return nil, err
@@ -176,30 +148,52 @@ func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args [
 //print person history by hash
 func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 1
-	if len(args) != 1 {
-		return nil, errors.New("incorrect number of arguments. need 1")
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
 	}
-	hash := args[0]
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
 	//get person from state
+	fmt.Println("get person history for person " + hash)
 	res, err := stub.GetState(personHistoryPrfx + hash)
 	return res, err
 }
 
 func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
-	if len(args) < 4 {
-		return nil, errors.New("incorrect number of arguments. need 4")
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
 	}
-	hash := args[0]
-	user := args[1]
-	insComp := args[2]
-	status := args[3]
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("hash=" + hash)
+	user, err := getStringParamFromArgs("user", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("user=" + user)
+	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("insComp=" + insComp)
+	status, err := getStringParamFromArgs("status", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("status=" + status)
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.ModifyDate = time.Now()
 	newPerson.Status = status
 	newPerson.Hash = hash
-	err := createOrUpdatePerson(stub, hash, *newPerson)
+	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
 		return nil, errors.New("error inserting person")
 	}
@@ -213,19 +207,36 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 
 func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 4
-	if len(args) < 4 {
-		return nil, errors.New("incorrect number of arguments. need 4")
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
 	}
-	hash := args[0]
-	user := args[1]
-	insComp := args[2]
-	status := args[3]
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("hash=" + hash)
+	user, err := getStringParamFromArgs("user", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("user=" + user)
+	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("insComp=" + insComp)
+	status, err := getStringParamFromArgs("status", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("status=" + status)
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.Hash = hash
 	newPerson.ModifyDate = time.Now()
 	newPerson.Status = status
-	err := createOrUpdatePerson(stub, hash, *newPerson)
+	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
 		return nil, errors.New("error updating person")
 	}
@@ -240,19 +251,32 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 
 func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 3
-	if len(args) < 3 {
-		return nil, errors.New("incorrect number of arguments. need 3")
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
 	}
-	hash := args[0]
-	user := args[1]
-	insComp := args[2]
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("hash=" + hash)
+	user, err := getStringParamFromArgs("user", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("user=" + user)
+	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("insComp=" + insComp)
 	//TODO maybe check existence ???
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.Hash = hash
 	newPerson.ModifyDate = time.Now()
 	newPerson.Status = STATUS_DELETED
-	err := createOrUpdatePerson(stub, hash, *newPerson)
+	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
 		return nil, errors.New("error updating person")
 	}
@@ -267,12 +291,25 @@ func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []
 func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	//parse parameters  - need 3
-	if len(args) < 3 {
-		return nil, errors.New("incorrect number of arguments. need 3")
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
 	}
-	hash := args[0]
-	user := args[1]
-	insComp := args[2]
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("hash=" + hash)
+	user, err := getStringParamFromArgs("user", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("user=" + user)
+	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("insComp=" + insComp)
 
 	res := &SearchResult{}
 	//check existence
@@ -382,19 +419,6 @@ func createOrUpdatePerson(stub shim.ChaincodeStubInterface, hash string, newPers
 	return nil
 }
 
-//func mergePerson(oldPerson Person, newPerson Person) (Person, error) {
-//	o := reflect.ValueOf(&oldPerson).Elem()
-//	n := reflect.ValueOf(&newPerson).Elem()
-//	for i := 0; i < o.NumField(); i++ {
-//		oldOne := o.Field(i)
-//		newOne := n.Field(i)
-//		if !reflect.ValueOf(newOne.Interface()).IsNil() {
-//			oldOne.Set(reflect.Value(newOne))
-//		}
-//	}
-//	return oldPerson, nil
-//}
-
 func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Person) error {
 	personAsBytes, err := json.Marshal(&person)
 	if err != nil {
@@ -407,14 +431,3 @@ func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Pers
 	fmt.Println("put record for " + hash)
 	return nil
 }
-
-//func calcHashByParams(firstName string, middleName string, lastName string, day string, month string, year string) []byte {
-//	return calcHash(firstName + middleName + lastName + day + month + year)
-//}
-
-//func calcHash(input string) []byte {
-//	hash := sha256.New()
-//	hash.Write([]byte(input))
-//	md := hash.Sum(nil)
-//	return md
-//}
