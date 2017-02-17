@@ -155,7 +155,8 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//parse parameters  - need 1
 	if len(args) != 1 {
-		return nil, errors.New("incorrect number of arguments. need 1")
+		//return nil, errors.New("incorrect number of arguments." + strconv.Itoa(len(args)) + " need 1")
+		fmt.Println("incorrect number of arguments." + strconv.Itoa(len(args)) + " need 1")
 	}
 	//hash := args[0]
 	argsMap, err := getUnmarshalledArgument(args)
@@ -166,7 +167,7 @@ func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("get info fro person " + hash)
+	fmt.Println("get info for person " + hash)
 	//get person from state
 	res, err := stub.GetState(personPrfx + hash)
 	return res, err
