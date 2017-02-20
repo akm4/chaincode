@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	//"strconv"
 	"time"
 	//"strings"
 
@@ -26,6 +26,7 @@ const ACTION_SEARCH = "search"
 const STATUS_OK = "ok"
 const STATUS_SUSP = "suspicious"
 const STATUS_DELETED = "deleted"
+const STATUS_NOT_FOUND = "not found"
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
@@ -314,6 +315,7 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 	res := &SearchResult{}
 	//check existence
 	var found bool
+	res.CurrentStatus = STATUS_NOT_FOUND
 	//retrieve Person from state by hash
 	personBytes, err := stub.GetState(personPrfx + hash)
 	found = err == nil && len(personBytes) != 0
@@ -342,7 +344,7 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 	//assign to result
 	res.History = history
 	//add record to history
-	err = addHistoryRecord(stub, hash, ACTION_SEARCH, user, insComp, strconv.FormatBool(found))
+	err = addHistoryRecord(stub, hash, ACTION_SEARCH, user, insComp, res.CurrentStatus)
 	if err != nil {
 		return nil, err
 	}
