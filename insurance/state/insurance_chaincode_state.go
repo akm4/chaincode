@@ -378,8 +378,9 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	newAction.User = user
 	newAction.Date = time.Now()
 	newAction.InsuranceCompany = insuranceCompany
-	//insert action to history
-	history = append(history, *newAction)
+	//insert action to history in LIFO order
+	history = append([]Action{*newAction}, history...)
+	//history = append(history, *newAction)
 	//put history to state
 	newHistoryBytes, err := json.Marshal(&history)
 	if err != nil {
