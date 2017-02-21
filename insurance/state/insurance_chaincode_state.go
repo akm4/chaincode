@@ -107,8 +107,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.write(stub, args)
 	} else if function == "insertPerson" { //create a new person
 		return t.insertPerson(stub, args)
-	} else if function == "deletePerson" { //delete a person
-		return t.deletePerson(stub, args)
 	} else if function == "updatePerson" { // update a person
 		return t.updatePerson(stub, args)
 	} else if function == "searchPerson" {
@@ -273,45 +271,6 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 	return nil, nil
 }
 
-func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//parse parameters  - need 3
-	argsMap, err := getUnmarshalledArgument(args)
-	if err != nil {
-		return nil, err
-	}
-	hash, err := getStringParamFromArgs("hash", argsMap)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("hash=" + hash)
-	user, err := getStringParamFromArgs("user", argsMap)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("user=" + user)
-	company, err := getStringParamFromArgs("company", argsMap)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("company=" + company)
-	//TODO maybe check existence ???
-	//-----add person hash to state
-	newPerson := &Person{}
-	newPerson.Hash = hash
-	newPerson.ModifyDate = time.Now()
-	newPerson.Status = STATUS_DELETED
-	err = createOrUpdatePerson(stub, hash, *newPerson)
-	if err != nil {
-		return nil, errors.New("error updating person")
-	}
-	//------add record to person history
-	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, company, STATUS_DELETED)
-	if err != nil {
-		return nil, errors.New("Error putting new history record " + hash + " to state")
-	}
-	return nil, nil
-}
-
 func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	//parse parameters  - need 3
@@ -350,6 +309,22 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 		}
 		//fill response record
 		res.Status = oldperson.Status
+	} else {
+		//create new
+		//-----add person hash to state
+		newPerson := &Person{}
+		newPerson.Hash = hash
+		newPerson.ModifyDate = time.Now()
+		newPerson.Status = STATUS_NOT_FOUND
+		err = createOrUpdatePerson(stub, hash, *newPerson)
+		if err != nil {
+			return nil, errors.New("error inserting person")
+		}
+		//------add record to person history
+		err = addHistoryRecord(stub, hash, ACTION_INSERT, user, company, STATUS_NOT_FOUND)
+		if err != nil {
+			return nil, errors.New("Error putting new history record " + hash + " to state")
+		}
 	}
 	//add record to history
 	err = addSearchRecord(stub, hash, user, company, res.Status)
