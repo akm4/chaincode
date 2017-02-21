@@ -84,7 +84,10 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.read(stub, args)
 	} else if function == "getPersonHistory" { // read history of person from state
 		return t.getPersonHistory(stub, args)
+	} else if function == "getPersonSearches" {
+		return t.getPersonSearches(stub, args)
 	}
+
 	//	 else if function == "calculateHash" {
 	//		return t.calculatePersonHash(stub, args)
 	//	}
@@ -163,6 +166,23 @@ func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, arg
 	//get person from state
 	fmt.Println("get person history for person " + hash)
 	res, err := stub.GetState(personHistoryPrfx + hash)
+	return res, err
+}
+
+//print person searches by hash
+func (t *SimpleChaincode) getPersonSearches(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//parse parameters  - need 1
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return nil, err
+	}
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return nil, err
+	}
+	//get person from state
+	fmt.Println("get person searches for person " + hash)
+	res, err := stub.GetState(personSearchPrfx + hash)
 	return res, err
 }
 
