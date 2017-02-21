@@ -16,6 +16,8 @@ var (
 	personPrfx = "Person:"
 	// prefix for saving history of person
 	personHistoryPrfx = "PersonHistory:"
+	//prefix for saving serches for person
+	personSearchPrfx = "PersonSearch:"
 )
 
 const ACTION_INSERT = "create"
@@ -34,11 +36,19 @@ type SimpleChaincode struct {
 
 //type for audit record
 type Action struct {
-	InsuranceCompany string    `json:"insuranceCompany"`
-	User             string    `json:"user"`
-	Method           string    `json:"method"`
-	Date             time.Time `json:"date"`
-	NewStatus        string    `json:newStatus`
+	Company string    `json:"company"`
+	User    string    `json:"user"`
+	Date    time.Time `json:"date"`
+	Status  string    `json:status`
+	Method  string    `json:"method"`
+}
+
+//type for search record
+type SearchResult struct {
+	Company string    `json:"company"`
+	User    string    `json:"user"`
+	Date    time.Time `json:"date"`
+	Status  string    `json:status`
 }
 
 //type for person data
@@ -46,13 +56,6 @@ type Person struct {
 	Hash       string    `json:hash`
 	Status     string    `json:"status"`
 	ModifyDate time.Time `json:"modifyDate"`
-}
-
-//type for result of search request
-type SearchResult struct {
-	Existence     bool     `json:existence`
-	CurrentStatus string   `json:currentStatus`
-	History       []Action `json:history`
 }
 
 //---------------------------------------------------- MAIN
@@ -179,11 +182,11 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 		return nil, err
 	}
 	fmt.Println("user=" + user)
-	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("insComp=" + insComp)
+	fmt.Println("company=" + company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
 		return nil, err
@@ -199,7 +202,7 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("error inserting person")
 	}
 	//------add record to person history
-	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, insComp, status)
+	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, company, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -222,11 +225,11 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 		return nil, err
 	}
 	fmt.Println("user=" + user)
-	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("insComp=" + insComp)
+	fmt.Println("company=" + company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
 		return nil, err
@@ -242,7 +245,7 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("error updating person")
 	}
 	//------add record to person history
-	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, insComp, status)
+	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, company, status)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -266,11 +269,11 @@ func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []
 		return nil, err
 	}
 	fmt.Println("user=" + user)
-	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("insComp=" + insComp)
+	fmt.Println("company=" + company)
 	//TODO maybe check existence ???
 	//-----add person hash to state
 	newPerson := &Person{}
@@ -282,7 +285,7 @@ func (t *SimpleChaincode) deletePerson(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New("error updating person")
 	}
 	//------add record to person history
-	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, insComp, STATUS_DELETED)
+	err = addHistoryRecord(stub, hash, ACTION_DELETE, user, company, STATUS_DELETED)
 	if err != nil {
 		return nil, errors.New("Error putting new history record " + hash + " to state")
 	}
@@ -306,16 +309,16 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 		return nil, err
 	}
 	fmt.Println("user=" + user)
-	insComp, err := getStringParamFromArgs("insComp", argsMap)
+	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("insComp=" + insComp)
+	fmt.Println("company=" + company)
 
 	res := &SearchResult{}
 	//check existence
 	var found bool
-	res.CurrentStatus = STATUS_NOT_FOUND
+	res.Status = STATUS_NOT_FOUND
 	//retrieve Person from state by hash
 	personBytes, err := stub.GetState(personPrfx + hash)
 	found = err == nil && len(personBytes) != 0
@@ -326,41 +329,17 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 			return nil, errors.New("Error unmarshalling person " + hash + " from state")
 		}
 		//fill response record
-		res.CurrentStatus = oldperson.Status
-		res.Existence = true
+		res.Status = oldperson.Status
 	}
-	//getHistory for result
-	var history []Action
-	historyBytes, err := stub.GetState(personHistoryPrfx + hash)
-	if err != nil {
-		return nil, errors.New("Error getting history for person " + hash)
-	}
-	if historyBytes != nil {
-		err = json.Unmarshal(historyBytes, &history)
-		if err != nil {
-			return nil, errors.New("Error unmarshalling history for person " + hash)
-		}
-	}
-	//assign to result
-	res.History = history
 	//add record to history
-	err = addHistoryRecord(stub, hash, ACTION_SEARCH, user, insComp, res.CurrentStatus)
+	err = addSearchRecord(stub, hash, user, company, res.Status)
 	if err != nil {
 		return nil, err
 	}
-	resBytes, _ := json.Marshal(res)
-	return resBytes, nil
+	return nil, nil
 }
 
-/*****************
-stub shim.ChaincodeStubInterface
-hash string
-action string
-user string
-insuranceCompany string
-status string
-******************/
-func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, insuranceCompany string, status string) error {
+func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, company string, status string) error {
 	var history []Action
 	historyBytes, err := stub.GetState(personHistoryPrfx + hash)
 	//chaincodeLogger.Info("current list: " + string(historyBytes))
@@ -375,11 +354,11 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 		}
 	}
 	newAction := &Action{}
-	newAction.NewStatus = status
+	newAction.Status = status
 	newAction.Method = action
 	newAction.User = user
 	newAction.Date = time.Now()
-	newAction.InsuranceCompany = insuranceCompany
+	newAction.Company = company
 	//insert action to history in LIFO order
 	history = append([]Action{*newAction}, history...)
 	//history = append(history, *newAction)
@@ -391,6 +370,38 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	err = stub.PutState(personHistoryPrfx+hash, newHistoryBytes)
 	if err != nil {
 		return errors.New("Error parsing history for person" + hash)
+	}
+	return nil
+}
+
+func addSearchRecord(stub shim.ChaincodeStubInterface, hash string, user string, company string, status string) error {
+	var search []SearchResult
+	searchBytes, err := stub.GetState(personSearchPrfx + hash)
+	fmt.Println("current list: " + string(searchBytes))
+	if err != nil {
+		return errors.New("Error getting search result for person ")
+	}
+	if searchBytes != nil {
+		err = json.Unmarshal(searchBytes, &search)
+		if err != nil {
+			return errors.New("Error unmarshalling search result for person ")
+		}
+	}
+	newSearch := &SearchResult{}
+	newSearch.Status = status
+	newSearch.User = user
+	newSearch.Date = time.Now()
+	newSearch.Company = company
+	//insert search to search list in LIFO order
+	search = append([]SearchResult{*newSearch}, search...)
+	//put search list to state
+	newSearchBytes, err := json.Marshal(&search)
+	if err != nil {
+		return errors.New("Error parsing search list for person " + hash)
+	}
+	err = stub.PutState(personSearchPrfx+hash, newSearchBytes)
+	if err != nil {
+		return errors.New("Error parsing serach list for person" + hash)
 	}
 	return nil
 }
