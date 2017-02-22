@@ -25,10 +25,10 @@ const ACTION_UPDATE = "update"
 const ACTION_DELETE = "delete"
 const ACTION_SEARCH = "search"
 
-const STATUS_OK = "ok"
-const STATUS_SUSP = "suspicious"
-const STATUS_DELETED = "deleted"
-const STATUS_NOT_FOUND = "not found"
+const STATUS_OK = "trusted"
+const STATUS_SUSP = "banned"
+const STATUS_DELETED = "wrong-data"
+const STATUS_NOT_FOUND = "not-initialized"
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
@@ -87,10 +87,6 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	} else if function == "getPersonSearches" {
 		return t.getPersonSearches(stub, args)
 	}
-
-	//	 else if function == "calculateHash" {
-	//		return t.calculatePersonHash(stub, args)
-	//	}
 
 	fmt.Println("query did not find func: " + function)
 
