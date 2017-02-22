@@ -51,12 +51,14 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 }
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 1 {
+	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
-	chaincodeURL := "" // ?
-	f := "read"
-	queryArgs := util.ToChaincodeArgs(f, "a")
+	chaincodeURL := args[0]
+	f := args[1]
+	key := args[2]
+	value := args[3]
+	queryArgs := util.ToChaincodeArgs(f, key, value)
 	response, err := stub.QueryChaincode(chaincodeURL, queryArgs)
 	if err != nil {
 		errStr := fmt.Sprintf("Failed to query chaincode. Got error: %s", err.Error())
@@ -67,7 +69,7 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 }
 
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 	key := args[0]

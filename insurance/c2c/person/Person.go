@@ -42,7 +42,7 @@ func (t *SimpleChaincode1) Invoke(stub shim.ChaincodeStubInterface, function str
 }
 
 func (t *SimpleChaincode1) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 1 {
+	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 	key := args[0]
@@ -50,7 +50,7 @@ func (t *SimpleChaincode1) read(stub shim.ChaincodeStubInterface, args []string)
 }
 
 func (t *SimpleChaincode1) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 	key := args[0]
