@@ -110,8 +110,8 @@
     ]
   },
   "chaincode":{
-    "zip_url": "https://github.com/akm4/chaincode/archive/2.0.2.zip",
-    "unzip_dir": "chaincode-2.0.2/insurance/c2c/person",
+    "zip_url": "https://github.com/akm4/chaincode/archive/2.0.4.zip",
+    "unzip_dir": "chaincode-2.0.4/insurance/c2c/person",
     "git_url": "http://gopkg.in/akm4/chaincode.v2/insurance/c2c/person"
   }
 }

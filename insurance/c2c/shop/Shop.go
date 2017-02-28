@@ -65,6 +65,44 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 	if f == "write" {
 		value = args[3]
 		if chaincodeURL == "local" {
+			//RESTRICTED
+			err = stub.PutState(key, []byte(value))
+		} else {
+			queryArgs = util.ToChaincodeArgs(f, key, value)
+			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+		}
+	} else if f == "read" {
+		if chaincodeURL == "local" {
+			response, err = stub.GetState(key)
+		} else {
+			// RESTRICTED
+			queryArgs = util.ToChaincodeArgs(f, key)
+			response, err = stub.QueryChaincode(chaincodeURL, queryArgs)
+		}
+	}
+	if err != nil {
+		errStr := fmt.Sprintf("SHOP:Failed to query chaincode. Got error: %s", err.Error())
+		fmt.Printf(errStr)
+		return nil, errors.New(errStr)
+	}
+	return response, nil
+}
+
+func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) < 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+	}
+	var value string
+	var queryArgs [][]byte
+	var response []byte
+	var err error
+
+	chaincodeURL := args[0]
+	f := args[1]
+	key := args[2]
+	if f == "write" {
+		value = args[3]
+		if chaincodeURL == "local" {
 			err = stub.PutState(key, []byte(value))
 		} else {
 			queryArgs = util.ToChaincodeArgs(f, key, value)
@@ -79,18 +117,10 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 		}
 	}
 	if err != nil {
-		errStr := fmt.Sprintf("Failed to query chaincode. Got error: %s", err.Error())
+		errStr := fmt.Sprintf("SHOP:Failed to invoke chaincode. Got error: %s", err.Error())
 		fmt.Printf(errStr)
 		return nil, errors.New(errStr)
 	}
-	return response, nil
-}
-
-func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) < 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
-	}
-	key := args[0]
-	val := []byte(args[1])
-	return nil, stub.PutState(key, val)
+	fmt.Println("SHOP:response = " + string(response))
+	return response, err
 }
