@@ -54,12 +54,30 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
+	var value string
+	var queryArgs [][]byte
+	var response []byte
+	var err error
+
 	chaincodeURL := args[0]
 	f := args[1]
 	key := args[2]
-	value := args[3]
-	queryArgs := util.ToChaincodeArgs(f, key, value)
-	response, err := stub.QueryChaincode(chaincodeURL, queryArgs)
+	if f == "write" {
+		value = args[3]
+		if chaincodeURL == "local" {
+			err = stub.PutState(key, []byte(value))
+		} else {
+			queryArgs = util.ToChaincodeArgs(f, key, value)
+			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+		}
+	} else if f == "read" {
+		if chaincodeURL == "local" {
+			response, err = stub.GetState(key)
+		} else {
+			queryArgs = util.ToChaincodeArgs(f, key)
+			response, err = stub.QueryChaincode(chaincodeURL, queryArgs)
+		}
+	}
 	if err != nil {
 		errStr := fmt.Sprintf("Failed to query chaincode. Got error: %s", err.Error())
 		fmt.Printf(errStr)
