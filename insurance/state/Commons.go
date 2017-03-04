@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	//"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
+//ArgsMap map for ars array in interface form
 type ArgsMap map[string]interface{}
 
 // Returns a map containing the JSON object represented by args[0]

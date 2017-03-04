@@ -66,7 +66,7 @@ func main() {
 	}
 }
 
-//---------------------------------------------------SHIM - INIT
+//Init - shim method
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//check arguments length
 	if len(args) != 1 {
@@ -75,7 +75,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
-//--------------------------------------------------- SHIM - QUERY
+//Query - shim method
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	// Handle different functions
 	if function == "getPersonInfo" { //read person by hash
@@ -93,7 +93,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	return nil, errors.New("Received unknown function query")
 }
 
-//---------------------------------------------SHIM - INVOKE
+//Invoke - shim method
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("Invoke is running this function :" + function)
 	// Handle different functions
