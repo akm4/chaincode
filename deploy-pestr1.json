@@ -1,0 +1,117 @@
+{
+  "network": {
+    "peers": [
+      {
+        "api_host": "425fc898f0964286ac1ee44a3175d6aa-vp0.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5001,
+        "id": "425fc898f0964286ac1ee44a3175d6aa-vp0"
+      },
+      {
+        "api_host": "425fc898f0964286ac1ee44a3175d6aa-vp3.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5001,
+        "id": "425fc898f0964286ac1ee44a3175d6aa-vp3"
+      },
+      {
+        "api_host": "425fc898f0964286ac1ee44a3175d6aa-vp1.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5001,
+        "id": "425fc898f0964286ac1ee44a3175d6aa-vp1"
+      },
+      {
+        "api_host": "425fc898f0964286ac1ee44a3175d6aa-vp2.us.blockchain.ibm.com",
+        "api_port": 80,
+        "api_port_tls": 5001,
+        "id": "425fc898f0964286ac1ee44a3175d6aa-vp2"
+      }
+    ],
+    "users": [
+      {
+        "enrollId": "user_type1_0",
+        "enrollSecret": "27cd682543"
+      },
+      {
+        "enrollId": "user_type1_1",
+        "enrollSecret": "a47f35d6e3"
+      },
+      {
+        "enrollId": "user_type1_2",
+        "enrollSecret": "0b9d12c981"
+      },
+      {
+        "enrollId": "user_type1_3",
+        "enrollSecret": "5805ea082d"
+      },
+      {
+        "enrollId": "user_type1_4",
+        "enrollSecret": "cd6787c563"
+      },
+      {
+        "enrollId": "user_type2_0",
+        "enrollSecret": "69bb0f2904"
+      },
+      {
+        "enrollId": "user_type2_1",
+        "enrollSecret": "0129a56d35"
+      },
+      {
+        "enrollId": "user_type2_2",
+        "enrollSecret": "13efae38d1"
+      },
+      {
+        "enrollId": "user_type2_3",
+        "enrollSecret": "fdaf5532a3"
+      },
+      {
+        "enrollId": "user_type2_4",
+        "enrollSecret": "e0fc22a060"
+      },
+      {
+        "enrollId": "user_type4_0",
+        "enrollSecret": "02d18eaa43"
+      },
+      {
+        "enrollId": "user_type4_1",
+        "enrollSecret": "34ea22a00a"
+      },
+      {
+        "enrollId": "user_type4_2",
+        "enrollSecret": "5e5c5f15a1"
+      },
+      {
+        "enrollId": "user_type4_3",
+        "enrollSecret": "78c2f0b37d"
+      },
+      {
+        "enrollId": "user_type4_4",
+        "enrollSecret": "9a5e6534f8"
+      },
+      {
+        "enrollId": "user_type8_0",
+        "enrollSecret": "9b5d55d7a8"
+      },
+      {
+        "enrollId": "user_type8_1",
+        "enrollSecret": "6c78ccb559"
+      },
+      {
+        "enrollId": "user_type8_2",
+        "enrollSecret": "b6bd0fe0ef"
+      },
+      {
+        "enrollId": "user_type8_3",
+        "enrollSecret": "368c6ed2f1"
+      },
+      {
+        "enrollId": "user_type8_4",
+        "enrollSecret": "3b96987aaf"
+      }
+    ]
+  },
+  "chaincode":{
+    "zip_url": "https://github.com/akm4/chaincode/archive/2.0.4.zip",
+    "unzip_dir": "chaincode-2.0.4/insurance/c2c/person",
+    "git_url": "http://gopkg.in/akm4/chaincode.v2/insurance/c2c/person"
+  }
+}
