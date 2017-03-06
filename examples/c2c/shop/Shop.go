@@ -52,8 +52,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 }
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) < 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	if len(args) < 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2 or more")
 	}
 	var value string
 	var queryArgs [][]byte
@@ -91,7 +91,7 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) < 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return nil, errors.New("Incorrect number of arguments. Expecting 2 or more")
 	}
 	var value string
 	var queryArgs [][]byte
