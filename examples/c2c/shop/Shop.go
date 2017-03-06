@@ -125,3 +125,25 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 	fmt.Println("SHOP:response = " + string(response))
 	return response, err
 }
+
+func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chaincodeURL string, function string, key string, value string) ([]byte, error) {
+	var queryArgs [][]byte
+	var response []byte
+	var err error
+	if function == "write" {
+		if chaincodeURL == "local" {
+			err = stub.PutState(key, []byte(value))
+		} else {
+			queryArgs = util.ToChaincodeArgs(function, key, value)
+			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+		}
+	} else if function == "read" {
+		if chaincodeURL == "local" {
+			response, err = stub.GetState(key)
+		} else {
+			queryArgs = util.ToChaincodeArgs(function, key)
+			response, err = stub.QueryChaincode(chaincodeURL, queryArgs)
+		}
+	}
+	return response, err
+}
