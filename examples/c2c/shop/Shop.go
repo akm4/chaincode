@@ -57,7 +57,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args string) ([]byte, error) {
 	var buffer bytes.Buffer
 	var err error
-
+	var response []byte
 	//parse input json
 	var parsed map[string]interface{}
 	err = json.Unmarshal([]byte(args), &parsed)
@@ -71,7 +71,12 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		function := vv["function"]
 		key := vv["key"]
 		value := vv["value"]
-		response, err := t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string))
+		if function == "read" {
+			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), "")
+		} else {
+			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string))
+		}
+
 		if err != nil {
 			errStr := fmt.Sprintf("SHOP:Failed to invoke chaincode. Got error: %s", err.Error())
 			fmt.Printf(errStr)

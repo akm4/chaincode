@@ -110,8 +110,8 @@
     ]
   },
   "chaincode":{
-    "zip_url": "https://github.com/akm4/chaincode/archive/3.0.1.zip",
-    "unzip_dir": "/chaincode-3.0.1/examples/c2c/person",
-    "git_url": "http://gopkg.in/akm4/chaincode.v0/examples/c2c/person"
+    "zip_url": "https://github.com/akm4/chaincode/archive/3.0.3.zip",
+    "unzip_dir": "/chaincode-3.0.3/examples/c2c/shop",
+    "git_url": "http://gopkg.in/akm4/chaincode.v0/examples/c2c/shop"
   }
 }
