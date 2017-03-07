@@ -109,6 +109,13 @@ func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chai
 			queryArgs = util.ToChaincodeArgs(function, key)
 			response, err = stub.QueryChaincode(chaincodeURL, queryArgs)
 		}
+	} else {
+		if chaincodeURL == "local" {
+			err = errors.New("unknown function")
+		} else {
+			queryArgs = util.ToChaincodeArgs(function, key, value)
+			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+		}
 	}
 	return response, err
 }
