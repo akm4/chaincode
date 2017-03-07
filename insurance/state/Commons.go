@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	//"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
 //ArgsMap map for ars array in interface form
