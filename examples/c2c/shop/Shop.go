@@ -74,14 +74,14 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		value := vv["value"]
 		if function == "read" {
 			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), "")
-		} else if function == "exception" {
+		} else if function == "exception" && address == "local" {
 			err = errors.New("bad function")
 		} else {
 			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string))
 		}
 
 		if err != nil {
-			errStr := fmt.Sprintf("SHOP:Failed to invoke chaincode . Got error: %s", err.Error())
+			errStr := fmt.Sprintf("Got error- %s", err.Error())
 			fmt.Printf(errStr)
 			response = []byte(errStr)
 		}
@@ -92,10 +92,12 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		buffer.WriteString(key.(string))
 		buffer.WriteString("_")
 		if function == "write" {
+			buffer.WriteString("_")
 			buffer.WriteString(value.(string))
-			buffer.WriteString(":")
 		}
+		buffer.WriteString(":")
 		buffer.Write(response)
+		buffer.WriteString(";")
 	}
 	fmt.Println("SHOP:response = " + buffer.String())
 	return buffer.Bytes(), err
