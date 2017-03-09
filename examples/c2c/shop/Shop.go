@@ -91,7 +91,7 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		buffer.WriteString("_")
 		buffer.WriteString(key.(string))
 		buffer.WriteString("_")
-		if function == "read" {
+		if function == "write" {
 			buffer.WriteString(value.(string))
 			buffer.WriteString(":")
 		}
