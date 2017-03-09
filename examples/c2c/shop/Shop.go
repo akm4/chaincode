@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	//"strconv"
+	//"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/util"
@@ -65,7 +66,7 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		return nil, err
 	}
 	actions := parsed["actions"].([]interface{})
-	for k, act := range actions {
+	for _, act := range actions {
 		vv := act.(map[string]interface{})
 		address := vv["address"]
 		function := vv["function"]
@@ -73,19 +74,28 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		value := vv["value"]
 		if function == "read" {
 			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), "")
+		} else if function == "exception" {
+			err = errors.New("bad function")
 		} else {
 			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string))
 		}
 
 		if err != nil {
-			errStr := fmt.Sprintf("SHOP:Failed to invoke chaincode. Got error: %s", err.Error())
+			errStr := fmt.Sprintf("SHOP:Failed to invoke chaincode . Got error: %s", err.Error())
 			fmt.Printf(errStr)
 			response = []byte(errStr)
 		}
-		buffer.WriteString(strconv.Itoa(k))
-		buffer.WriteString(":")
+		buffer.WriteString(address.(string)[0:5])
+		buffer.WriteString("_")
+		buffer.WriteString(function.(string))
+		buffer.WriteString("_")
+		buffer.WriteString(key.(string))
+		buffer.WriteString("_")
+		if function == "read" {
+			buffer.WriteString(value.(string))
+			buffer.WriteString(":")
+		}
 		buffer.Write(response)
-
 	}
 	fmt.Println("SHOP:response = " + buffer.String())
 	return buffer.Bytes(), err
