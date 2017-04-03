@@ -9,6 +9,7 @@ import (
 	//"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 var (
@@ -67,18 +68,42 @@ func main() {
 }
 
 //Init - shim method
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	_, args := stub.GetFunctionAndParameters()
 	//check arguments length
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-	return nil, nil
+	return shim.Success(nil)
 }
 
 //Query - shim method
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	// Handle different functions
-	if function == "getPersonInfo" { //read person by hash
+
+	fmt.Println("query did not find func: " + function)
+
+	return nil, errors.New("Received unknown function query")
+}
+
+//Invoke - shim method
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	function, args := stub.GetFunctionAndParameters()
+	fmt.Println("Invoke is running this function :" + function)
+	// Handle different functions
+	if function == "init" { //initialize the chaincode state, used as reset
+		return t.Init(stub)
+		//////// write state functions
+	} else if function == "write" {
+		return t.write(stub, args)
+	} else if function == "insertPerson" { //create a new person
+		return t.insertPerson(stub, args)
+	} else if function == "updatePerson" { // update a person
+		return t.updatePerson(stub, args)
+	} else if function == "searchPerson" {
+		return t.searchPerson(stub, args)
+		/// read  state functions
+	} else if function == "getPersonInfo" { //read person by hash
 		return t.getPersonInfo(stub, args)
 	} else if function == "read" { // read data by name from state
 		return t.read(stub, args)
@@ -88,122 +113,119 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.getPersonSearches(stub, args)
 	}
 
-	fmt.Println("query did not find func: " + function)
-
-	return nil, errors.New("Received unknown function query")
+	return shim.Error("Received unknown function invocation")
 }
 
-//Invoke - shim method
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("Invoke is running this function :" + function)
-	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub, "init", args)
-	} else if function == "write" {
-		return t.write(stub, args)
-	} else if function == "insertPerson" { //create a new person
-		return t.insertPerson(stub, args)
-	} else if function == "updatePerson" { // update a person
-		return t.updatePerson(stub, args)
-	} else if function == "searchPerson" {
-		return t.searchPerson(stub, args)
-	}
-
-	return nil, errors.New("Received unknown function invocation")
-}
-
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
 	key := args[0]
-	return stub.GetState(key)
+	response, err := stub.GetState(key)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(response)
 }
 
-func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 	key := args[0]
 	val := []byte(args[1])
-	return nil, stub.PutState(key, val)
+	err := stub.PutState(key, val)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
 }
 
 //print person data by hash
-func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//parse parameters  - need 1
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("get info for person " + hash)
 	//get person from state
 	res, err := stub.GetState(personPrfx + hash)
-	return res, err
+
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(res)
 }
 
 //print person history by hash
-func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//parse parameters  - need 1
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	//get person from state
 	fmt.Println("get person history for person " + hash)
 	res, err := stub.GetState(personHistoryPrfx + hash)
-	return res, err
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(res)
 }
 
 //print person searches by hash
-func (t *SimpleChaincode) getPersonSearches(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) getPersonSearches(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//parse parameters  - need 1
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	//get person from state
 	fmt.Println("get person searches for person " + hash)
 	res, err := stub.GetState(personSearchPrfx + hash)
-	return res, err
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(res)
 }
 
-func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//parse parameters  - need 4
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("hash=" + hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("user=" + user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("status=" + status)
 	//-----add person hash to state
@@ -213,40 +235,40 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 	newPerson.Hash = hash
 	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
-		return nil, errors.New("error inserting person")
+		return shim.Error("error inserting person")
 	}
 	//------add record to person history
 	err = addHistoryRecord(stub, hash, ACTION_INSERT, user, company, status)
 	if err != nil {
-		return nil, errors.New("Error putting new history record " + hash + " to state")
+		return shim.Error("Error putting new history record " + hash + " to state")
 	}
-	return nil, nil
+	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//parse parameters  - need 4
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("hash=" + hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("user=" + user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("status=" + status)
 	//-----add person hash to state
@@ -256,37 +278,37 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 	newPerson.Status = status
 	err = createOrUpdatePerson(stub, hash, *newPerson)
 	if err != nil {
-		return nil, errors.New("error updating person")
+		return shim.Error("error updating person")
 	}
 	//------add record to person history
 	err = addHistoryRecord(stub, hash, ACTION_UPDATE, user, company, status)
 	if err != nil {
-		return nil, errors.New("Error putting new history record " + hash + " to state")
+		return shim.Error("Error putting new history record " + hash + " to state")
 	}
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	//parse parameters  - need 3
 	argsMap, err := getUnmarshalledArgument(args)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	hash, err := getStringParamFromArgs("hash", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("hash=" + hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("user=" + user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
 
@@ -301,7 +323,7 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 		var oldperson Person
 		err = json.Unmarshal(personBytes, &oldperson)
 		if err != nil {
-			return nil, errors.New("Error unmarshalling person " + hash + " from state")
+			return shim.Error("Error unmarshalling person " + hash + " from state")
 		}
 		//fill response record
 		res.Status = oldperson.Status
@@ -314,20 +336,20 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 		newPerson.Status = STATUS_NOT_FOUND
 		err = createOrUpdatePerson(stub, hash, *newPerson)
 		if err != nil {
-			return nil, errors.New("error inserting person")
+			return shim.Error("error inserting person")
 		}
 		//------add record to person history
 		err = addHistoryRecord(stub, hash, ACTION_INSERT, user, company, STATUS_NOT_FOUND)
 		if err != nil {
-			return nil, errors.New("Error putting new history record " + hash + " to state")
+			return shim.Error("Error putting new history record " + hash + " to state")
 		}
 	}
 	//add record to history
 	err = addSearchRecord(stub, hash, user, company, res.Status)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
-	return nil, nil
+	return shim.Success(nil)
 }
 
 func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, company string, status string) error {

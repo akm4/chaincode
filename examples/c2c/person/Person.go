@@ -1,10 +1,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 //SimpleChaincode - default "class"
@@ -12,51 +12,58 @@ type SimpleChaincode struct {
 }
 
 //Init - shim method
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	//check arguments length
+	_, args := stub.GetFunctionAndParameters()
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-	return nil, nil
-}
-
-//Query - shim method
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	// Handle different functions
-	if function == "read" { // read data by name from state
-		return t.read(stub, args)
-	}
-	fmt.Println("query did not find func: " + function)
-	return nil, errors.New("Received unknown function query")
+	return shim.Success(nil)
 }
 
 //Invoke - shim method
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("Invoke is running this function :" + function)
 	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub, "init", args)
-	} else if function == "write" {
+	if function == "write" {
 		return t.write(stub, args)
+	} else if function == "read" { // read data by name from state
+		return t.read(stub, args)
 	}
-	return nil, errors.New("Received unknown function invocation")
+	return shim.Error("Received unknown function invocation")
 }
 
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) < 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
 	key := args[0]
-	return stub.GetState(key)
+	Avalbytes, err := stub.GetState(key)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to get state for " + key + "\"}"
+		return shim.Error(jsonResp)
+	}
+	if Avalbytes == nil {
+		jsonResp := "{\"Error\":\"Nil value for " + key + "\"}"
+		return shim.Error(jsonResp)
+	}
+	jsonResp := "{\"Key\":\"" + key + "\",\"Value\":\"" + string(Avalbytes) + "\"}"
+	fmt.Printf("Query Response:%s\n", jsonResp)
+	return shim.Success(Avalbytes)
 }
 
-func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) < 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 	key := args[0]
 	val := []byte(args[1])
-	return nil, stub.PutState(key, val)
+	err := stub.PutState(key, val)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
 }
 
 func main() {

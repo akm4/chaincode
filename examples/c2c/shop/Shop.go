@@ -7,9 +7,9 @@ import (
 	"fmt"
 	//"strconv"
 	//"strings"
-
+	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/core/util"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 //SimpleChaincode - default "class"
@@ -25,37 +25,31 @@ func main() {
 }
 
 //Init - shim method
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	//check arguments length
+	_, args := stub.GetFunctionAndParameters()
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-	return nil, nil
-}
-
-//Query - - shim method
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	// Handle different functions
-	if function == "read" { // read data by name from state
-		return t.doActions(stub, args[0])
-	}
-	fmt.Println("query did not find func: " + function)
-	return nil, errors.New("Received unknown function query")
+	return shim.Success(nil)
 }
 
 //Invoke - shim method
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("Invoke is running this function :" + function)
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub, "init", args)
+		return t.Init(stub)
 	} else if function == "write" {
 		return t.doActions(stub, args[0])
+	} else if function == "read" { // read data by name from state
+		return t.doActions(stub, args[0])
 	}
-	return nil, errors.New("Received unknown function invocation")
+	return shim.Error("Received unknown function invocation")
 }
 
-func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args string) ([]byte, error) {
+func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args string) pb.Response {
 	var buffer bytes.Buffer
 	var err error
 	var response []byte
@@ -63,7 +57,7 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 	var parsed map[string]interface{}
 	err = json.Unmarshal([]byte(args), &parsed)
 	if err != nil {
-		return nil, err
+		return shim.Error(err.Error())
 	}
 	actions := parsed["actions"].([]interface{})
 	for _, act := range actions {
@@ -100,33 +94,49 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		buffer.WriteString(";")
 	}
 	fmt.Println("SHOP:response = " + buffer.String())
-	return buffer.Bytes(), err
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(buffer.Bytes())
 }
 
 func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chaincodeURL string, function string, key string, value string) ([]byte, error) {
 	var queryArgs [][]byte
 	var response []byte
 	var err error
+	var bpRes pb.Response
 	if function == "write" {
 		if chaincodeURL == "local" {
 			err = stub.PutState(key, []byte(value))
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key, value)
-			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			if bpRes.Status != shim.OK {
+				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
+			}
+			response = bpRes.Payload
 		}
 	} else if function == "read" {
 		if chaincodeURL == "local" {
 			response, err = stub.GetState(key)
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key)
-			response, err = stub.QueryChaincode(chaincodeURL, queryArgs)
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			if bpRes.Status != shim.OK {
+				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
+			}
+			response = bpRes.Payload
 		}
 	} else {
 		if chaincodeURL == "local" {
 			err = errors.New("unknown function")
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key, value)
-			response, err = stub.InvokeChaincode(chaincodeURL, queryArgs)
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			if bpRes.Status != shim.OK {
+				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
+			}
+			response = bpRes.Payload
 		}
 	}
 	return response, err
