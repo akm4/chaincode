@@ -8,6 +8,8 @@ import (
 	"time"
 	//"strings"
 
+	"os"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -19,6 +21,7 @@ var (
 	personHistoryPrfx = "PersonHistory:"
 	//prefix for saving serches for person
 	personSearchPrfx = "PersonSearch:"
+	logger           = shim.NewLogger("insurance")
 )
 
 const ACTION_INSERT = "create"
@@ -61,9 +64,14 @@ type Person struct {
 
 //---------------------------------------------------- MAIN
 func main() {
+	logger.SetLevel(shim.LogInfo)
+
+	logLevel, _ := shim.LogLevel(os.Getenv("SHIM_LOGGING_LEVEL"))
+	shim.SetLoggingLevel(logLevel)
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
+		logger.Errorf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -82,7 +90,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	// Handle different functions
 
 	fmt.Println("query did not find func: " + function)
-
+	logger.Errorf("query did not find func%s:", function)
 	return nil, errors.New("Received unknown function query")
 }
 
@@ -90,6 +98,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("Invoke is running this function :" + function)
+	logger.Infof("Invoke is running this function : %s", function)
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub)
@@ -153,6 +162,7 @@ func (t *SimpleChaincode) getPersonInfo(stub shim.ChaincodeStubInterface, args [
 		return shim.Error(err.Error())
 	}
 	fmt.Println("get info for person " + hash)
+	logger.Infof("get info for person %s", hash)
 	//get person from state
 	res, err := stub.GetState(personPrfx + hash)
 
@@ -175,6 +185,7 @@ func (t *SimpleChaincode) getPersonHistory(stub shim.ChaincodeStubInterface, arg
 	}
 	//get person from state
 	fmt.Println("get person history for person " + hash)
+	logger.Infof("get person history for person %s", hash)
 	res, err := stub.GetState(personHistoryPrfx + hash)
 	if err != nil {
 		return shim.Error(err.Error())
@@ -195,6 +206,7 @@ func (t *SimpleChaincode) getPersonSearches(stub shim.ChaincodeStubInterface, ar
 	}
 	//get person from state
 	fmt.Println("get person searches for person " + hash)
+	logger.Infof("get person searches for person %s ", hash)
 	res, err := stub.GetState(personSearchPrfx + hash)
 	if err != nil {
 		return shim.Error(err.Error())
@@ -212,22 +224,26 @@ func (t *SimpleChaincode) insertPerson(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Println("hash=" + hash)
+	fmt.Println("insert man with hash " + hash)
+	logger.Infof("insert man with hash %s", hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Println("user=" + user)
+	fmt.Println("for user " + user)
+	logger.Infof("for user %s", user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
+	logger.Infof("company= %s", company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("status=" + status)
+	logger.Infof("status= %s", status)
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.ModifyDate = time.Now()
@@ -255,22 +271,25 @@ func (t *SimpleChaincode) updatePerson(stub shim.ChaincodeStubInterface, args []
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Println("hash=" + hash)
+	logger.Infof("update man with hash %s", hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("user=" + user)
+	logger.Infof("for user %s", user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
+	logger.Infof("company= %s", company)
 	status, err := getStringParamFromArgs("status", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("status=" + status)
+	logger.Infof("status= %s", status)
 	//-----add person hash to state
 	newPerson := &Person{}
 	newPerson.Hash = hash
@@ -301,16 +320,19 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 		return shim.Error(err.Error())
 	}
 	fmt.Println("hash=" + hash)
+	logger.Infof("search man with hash %s", hash)
 	user, err := getStringParamFromArgs("user", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("user=" + user)
+	logger.Infof("for user %s", user)
 	company, err := getStringParamFromArgs("company", argsMap)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	fmt.Println("company=" + company)
+	logger.Infof("company= %s", company)
 
 	res := &SearchResult{}
 	//check existence
@@ -355,8 +377,8 @@ func (t *SimpleChaincode) searchPerson(stub shim.ChaincodeStubInterface, args []
 func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action string, user string, company string, status string) error {
 	var history []Action
 	historyBytes, err := stub.GetState(personHistoryPrfx + hash)
-	//chaincodeLogger.Info("current list: " + string(historyBytes))
 	fmt.Println("current list: " + string(historyBytes))
+	logger.Infof("current list: %s", string(historyBytes))
 	if err != nil {
 		return errors.New("Error getting history for person ")
 	}
@@ -391,6 +413,7 @@ func addSearchRecord(stub shim.ChaincodeStubInterface, hash string, user string,
 	var search []SearchResult
 	searchBytes, err := stub.GetState(personSearchPrfx + hash)
 	fmt.Println("current list: " + string(searchBytes))
+	logger.Infof("current list: %s", string(searchBytes))
 	if err != nil {
 		return errors.New("Error getting search result for person ")
 	}
@@ -414,7 +437,7 @@ func addSearchRecord(stub shim.ChaincodeStubInterface, hash string, user string,
 	}
 	err = stub.PutState(personSearchPrfx+hash, newSearchBytes)
 	if err != nil {
-		return errors.New("Error parsing serach list for person" + hash)
+		return errors.New("Error parsing search list for person" + hash)
 	}
 	return nil
 }
@@ -456,5 +479,6 @@ func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Pers
 		return errors.New("Error puttin new person")
 	}
 	fmt.Println("put record for " + hash)
+	logger.Infof("put record for %s", hash)
 	return nil
 }
