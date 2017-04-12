@@ -8,7 +8,7 @@ import (
 	"time"
 	//"strings"
 
-	"os"
+	//"os"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -64,9 +64,10 @@ type Person struct {
 
 //---------------------------------------------------- MAIN
 func main() {
-	logger.SetLevel(shim.LogInfo)
 
-	logLevel, _ := shim.LogLevel(os.Getenv("SHIM_LOGGING_LEVEL"))
+	logger.SetLevel(shim.LogDebug)
+	//TODO fix to env variable, now constant
+	logLevel, _ := shim.LogLevel("DEBUG")
 	shim.SetLoggingLevel(logLevel)
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
@@ -120,6 +121,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getPersonHistory(stub, args)
 	} else if function == "getPersonSearches" {
 		return t.getPersonSearches(stub, args)
+	} else if function == "setLoggingLevel" {
+		return t.setLoggingLevel(stub, args)
 	}
 
 	return shim.Error("Received unknown function invocation")
@@ -481,4 +484,44 @@ func putPersonInState(stub shim.ChaincodeStubInterface, hash string, person Pers
 	fmt.Println("put record for " + hash)
 	logger.Infof("put record for %s", hash)
 	return nil
+}
+
+func (t *SimpleChaincode) setLoggingLevel(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	type LogLevelArg struct {
+		Level string `json:"logLevel"`
+	}
+	var level LogLevelArg
+	var err error
+	if len(args) != 1 {
+		err = errors.New("Incorrect number of arguments. Expecting a JSON encoded LogLevel.")
+		logger.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+	err = json.Unmarshal([]byte(args[0]), &level)
+	if err != nil {
+		err = fmt.Errorf("setLoggingLevel failed to unmarshal arg: %s", err)
+		logger.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	switch level.Level {
+	case "DEBUG":
+		logger.SetLevel(shim.LogDebug)
+	case "INFO":
+		logger.SetLevel(shim.LogInfo)
+	case "NOTICE":
+		logger.SetLevel(shim.LogNotice)
+	case "WARNING":
+		logger.SetLevel(shim.LogWarning)
+	case "ERROR":
+		logger.SetLevel(shim.LogError)
+	case "CRITICAL":
+		logger.SetLevel(shim.LogCritical)
+	default:
+		err = fmt.Errorf("setLoggingLevel failed with unknown arg: %s", level.Level)
+		logger.Errorf(err.Error())
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(nil)
 }

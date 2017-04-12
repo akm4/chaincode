@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	//"os"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -16,8 +16,10 @@ type SimpleChaincode struct {
 
 //Init - shim method
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("init method")
 	//check arguments length
-	_, args := stub.GetFunctionAndParameters()
+	function, args := stub.GetFunctionAndParameters()
+	logger.Debugf("dInit is running this function :%s", function)
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
@@ -28,6 +30,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("Invoke is running this function :" + function)
+	logger.Debugf("dInvoke is running this function :%s", function)
 	// Handle different functions
 	if function == "write" {
 		return t.write(stub, args)
@@ -70,9 +73,9 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 }
 
 func main() {
-	logger.SetLevel(shim.LogInfo)
-
-	logLevel, _ := shim.LogLevel(os.Getenv("SHIM_LOGGING_LEVEL"))
+	fmt.Println("main method")
+	logger.SetLevel(shim.LogDebug)
+	logLevel, _ := shim.LogLevel("DEBUG")
 	shim.SetLoggingLevel(logLevel)
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
