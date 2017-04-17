@@ -66,12 +66,13 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		function := vv["function"]
 		key := vv["key"]
 		value := vv["value"]
+		channel := vv["channel"]
 		if function == "read" {
-			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), "")
+			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), channel.(string))
 		} else if function == "exception" && address == "local" {
 			err = errors.New("bad function")
 		} else {
-			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string))
+			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), value.(string), channel.(string))
 		}
 
 		if err != nil {
@@ -100,7 +101,7 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 	return shim.Success(buffer.Bytes())
 }
 
-func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chaincodeURL string, function string, key string, value string) ([]byte, error) {
+func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chaincodeURL string, function string, key string, value string, channel string) ([]byte, error) {
 	var queryArgs [][]byte
 	var response []byte
 	var err error
@@ -110,7 +111,7 @@ func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chai
 			err = stub.PutState(key, []byte(value))
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key, value)
-			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, channel)
 			if bpRes.Status != shim.OK {
 				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
 			}
@@ -121,7 +122,7 @@ func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chai
 			response, err = stub.GetState(key)
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key)
-			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, channel)
 			if bpRes.Status != shim.OK {
 				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
 			}
@@ -132,7 +133,7 @@ func (t *SimpleChaincode) invokeChainCode(stub shim.ChaincodeStubInterface, chai
 			err = errors.New("unknown function")
 		} else {
 			queryArgs = util.ToChaincodeArgs(function, key, value)
-			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, "")
+			bpRes = stub.InvokeChaincode(chaincodeURL, queryArgs, channel)
 			if bpRes.Status != shim.OK {
 				err = fmt.Errorf("Failed to invoke chaincode. Got error: %s", bpRes.Payload)
 			}
