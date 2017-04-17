@@ -121,8 +121,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getPersonHistory(stub, args)
 	} else if function == "getPersonSearches" {
 		return t.getPersonSearches(stub, args)
+		////// util functions
 	} else if function == "setLoggingLevel" {
 		return t.setLoggingLevel(stub, args)
+		/// read-write function
+	} else if function == "searchPersonAndReturn" {
+		return t.searchPersonAndReturn(stub, args)
 	}
 
 	return shim.Error("Received unknown function invocation")
@@ -524,4 +528,78 @@ func (t *SimpleChaincode) setLoggingLevel(stub shim.ChaincodeStubInterface, args
 	}
 
 	return shim.Success(nil)
+}
+
+func (t *SimpleChaincode) searchPersonAndReturn(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	//parse parameters  - need 3
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	fmt.Println("hash=" + hash)
+	logger.Infof("search man with hash %s", hash)
+	user, err := getStringParamFromArgs("user", argsMap)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	fmt.Println("user=" + user)
+	logger.Infof("for user %s", user)
+	company, err := getStringParamFromArgs("company", argsMap)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	fmt.Println("company=" + company)
+	logger.Infof("company= %s", company)
+
+	res := &SearchResult{}
+	//check existence
+	var found bool
+	res.Status = STATUS_NOT_FOUND
+	//retrieve Person from state by hash
+	personBytes, err := stub.GetState(personPrfx + hash)
+	found = err == nil && len(personBytes) != 0
+	if found { // if exists
+		var oldperson Person
+		err = json.Unmarshal(personBytes, &oldperson)
+		if err != nil {
+			return shim.Error("Error unmarshalling person " + hash + " from state")
+		}
+		//fill response record
+		res.Status = oldperson.Status
+		res.Date = oldperson.ModifyDate
+	} else {
+		//create new
+		//-----add person hash to state
+		newPerson := &Person{}
+		newPerson.Hash = hash
+		newPerson.ModifyDate = time.Now()
+		newPerson.Status = STATUS_NOT_FOUND
+		err = createOrUpdatePerson(stub, hash, *newPerson)
+		if err != nil {
+			return shim.Error("error inserting person")
+		}
+		//------add record to person history
+		err = addHistoryRecord(stub, hash, ACTION_INSERT, user, company, STATUS_NOT_FOUND)
+		if err != nil {
+			return shim.Error("Error putting new history record " + hash + " to state")
+		}
+		res.Status = newPerson.Status
+		res.Date = newPerson.ModifyDate
+	}
+	//add record to history
+	err = addSearchRecord(stub, hash, user, company, res.Status)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	//prepare response
+	resBytes, err := json.Marshal(res)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(resBytes)
 }
