@@ -68,7 +68,7 @@ func (t *SimpleChaincode) doActions(stub shim.ChaincodeStubInterface, args strin
 		value := vv["value"]
 		channel := vv["channel"]
 		if function == "read" {
-			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), channel.(string))
+			response, err = t.invokeChainCode(stub, address.(string), function.(string), key.(string), "", channel.(string))
 		} else if function == "exception" && address == "local" {
 			err = errors.New("bad function")
 		} else {
