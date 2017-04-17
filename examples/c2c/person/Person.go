@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	//"os"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -36,6 +37,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.write(stub, args)
 	} else if function == "read" { // read data by name from state
 		return t.read(stub, args)
+	} else if function == "multipleWrite" {
+		return t.multipleWrite(stub, args)
 	}
 	return shim.Error("Received unknown function invocation")
 }
@@ -69,6 +72,26 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+	return shim.Success(nil)
+}
+
+func (t *SimpleChaincode) multipleWrite(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 2 {
+		return shim.Error("Incorrect number of arguments. Expecting 2")
+	}
+	key := args[0]
+	count, err := strconv.Atoi(args[1])
+	if err != nil {
+		return shim.Error("incorrect count " + err.Error())
+	}
+	for i := 0; i < count; i++ {
+		err := stub.PutState(key+strconv.Itoa(i), []byte(strconv.Itoa(i)))
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+	}
+
 	return shim.Success(nil)
 }
 
