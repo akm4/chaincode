@@ -121,7 +121,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getPersonHistory(stub, args)
 	} else if function == "getPersonSearches" {
 		return t.getPersonSearches(stub, args)
-	} else if function == "get" {
+	} else if function == "getPersonHistoryIter" {
 		return t.getPersonHistoryIter(stub, args)
 		////// util functions
 	} else if function == "setLoggingLevel" {
@@ -134,11 +134,17 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Error("Received unknown function invocation")
 }
 func (t *SimpleChaincode) getPersonHistoryIter(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) < 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
-	}
 	var history []string
-	hash := args[0]
+	//parse parameters  - need 1
+	argsMap, err := getUnmarshalledArgument(args)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	hash, err := getStringParamFromArgs("hash", argsMap)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	logger.Debugf("search history for %s",personPrfx + hash)
 	resultsIterator, err := stub.GetHistoryForKey(personPrfx + hash)
 	if err != nil {
 		return shim.Error(err.Error())
@@ -150,6 +156,7 @@ func (t *SimpleChaincode) getPersonHistoryIter(stub shim.ChaincodeStubInterface,
 		if err != nil {
 			return shim.Error(err.Error())
 		}
+		logger.Debugf("historicValue%+v",historicValue)
 		if historicValue != nil && historicValue.Value != nil {
 			history = append(history, "{", time.Unix(historicValue.Timestamp.Seconds, int64(historicValue.Timestamp.Nanos)).String(), ":", string(historicValue.Value), "}") //add this tx to the list
 		}
