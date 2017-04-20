@@ -4,7 +4,7 @@ import (
 	"fmt"
 	//"os"
 	"strconv"
-
+	"encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -39,8 +39,38 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.read(stub, args)
 	} else if function == "multipleWrite" {
 		return t.multipleWrite(stub, args)
+	} else if function == "readKeyHistory" {
+		return t.readKeyHistory(stub, args)
 	}
 	return shim.Error("Received unknown function invocation")
+}
+func (t *SimpleChaincode) readKeyHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	var history []string
+	key := args[0]
+	resultsIterator, err := stub.GetHistoryForKey(key)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	defer resultsIterator.Close()
+
+	for resultsIterator.HasNext() {
+		historicValue, err := resultsIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+		if historicValue!=nil && historicValue.Value!=nil{
+			history = append(history, historicValue.Timestamp.String()," ->",string(historicValue.Value),";") //add this tx to the list
+		}
+
+	}
+	fmt.Printf("- readKeyHistory returning:\n%s", history)
+
+	//change to array of bytes
+	historyAsBytes, _ := json.Marshal(history) //convert to array of bytes
+	return shim.Success(historyAsBytes)
 }
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -91,7 +121,6 @@ func (t *SimpleChaincode) multipleWrite(stub shim.ChaincodeStubInterface, args [
 		}
 
 	}
-
 	return shim.Success(nil)
 }
 
