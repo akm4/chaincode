@@ -121,6 +121,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getPersonHistory(stub, args)
 	} else if function == "getPersonSearches" {
 		return t.getPersonSearches(stub, args)
+	} else if function == "get" {
+		return t.getPersonHistoryIter(stub, args)
 		////// util functions
 	} else if function == "setLoggingLevel" {
 		return t.setLoggingLevel(stub, args)
@@ -130,6 +132,34 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 
 	return shim.Error("Received unknown function invocation")
+}
+func (t *SimpleChaincode) getPersonHistoryIter(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	var history []string
+	hash := args[0]
+	resultsIterator, err := stub.GetHistoryForKey(personPrfx + hash)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	defer resultsIterator.Close()
+
+	for resultsIterator.HasNext() {
+		historicValue, err := resultsIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+		if historicValue != nil && historicValue.Value != nil {
+			history = append(history, "{", time.Unix(historicValue.Timestamp.Seconds, int64(historicValue.Timestamp.Nanos)).String(), ":", string(historicValue.Value), "}") //add this tx to the list
+		}
+
+	}
+	fmt.Printf("- readKeyHistory returning:\n%s", history)
+
+	//change to array of bytes
+	historyAsBytes, _ := json.MarshalIndent(history, "", "\t") //convert to array of bytes
+	return shim.Success(historyAsBytes)
 }
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -403,7 +433,6 @@ func addHistoryRecord(stub shim.ChaincodeStubInterface, hash string, action stri
 	newAction.Company = company
 	//insert action to history in LIFO order
 	history = append([]Action{*newAction}, history...)
-	//history = append(history, *newAction)
 	//put history to state
 	newHistoryBytes, err := json.Marshal(&history)
 	if err != nil {
