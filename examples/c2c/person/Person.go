@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	time "time"
 )
 
 var logger = shim.NewLogger("examples")
@@ -62,7 +63,7 @@ func (t *SimpleChaincode) readKeyHistory(stub shim.ChaincodeStubInterface, args 
 			return shim.Error(err.Error())
 		}
 		if historicValue!=nil && historicValue.Value!=nil{
-			history = append(history, historicValue.Timestamp.String()," ->",string(historicValue.Value),";") //add this tx to the list
+			history = append(history, time.Unix(historicValue.Timestamp.Seconds, int64(historicValue.Timestamp.Nanos)).String()," - ",string(historicValue.Value),";") //add this tx to the list
 		}
 
 	}
