@@ -70,7 +70,7 @@ func (t *SimpleChaincode) readKeyHistory(stub shim.ChaincodeStubInterface, args 
 	fmt.Printf("- readKeyHistory returning:\n%s", history)
 
 	//change to array of bytes
-	historyAsBytes, _ := json.Marshal(history) //convert to array of bytes
+	historyAsBytes, _ := json.MarshalIndent(history,"", "\t") //convert to array of bytes
 	return shim.Success(historyAsBytes)
 }
 
