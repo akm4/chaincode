@@ -26,12 +26,12 @@ var (
 
 const ACTION_INSERT = "create"
 const ACTION_UPDATE = "update"
-const ACTION_DELETE = "delete"
-const ACTION_SEARCH = "search"
+//const ACTION_DELETE = "delete"
+//const ACTION_SEARCH = "search"
 
-const STATUS_OK = "trusted"
-const STATUS_SUSP = "banned"
-const STATUS_DELETED = "wrong-data"
+//const STATUS_OK = "trusted"
+//const STATUS_SUSP = "banned"
+//const STATUS_DELETED = "wrong-data"
 const STATUS_NOT_FOUND = "not-initialized"
 
 // SimpleChaincode example simple Chaincode implementation
@@ -43,7 +43,7 @@ type Action struct {
 	Company string    `json:"company"`
 	User    string    `json:"user"`
 	Date    time.Time `json:"date"`
-	Status  string    `json:status`
+	Status  string    `json:"status"`
 	Method  string    `json:"method"`
 }
 
@@ -52,12 +52,12 @@ type SearchResult struct {
 	Company string    `json:"company"`
 	User    string    `json:"user"`
 	Date    time.Time `json:"date"`
-	Status  string    `json:status`
+	Status  string    `json:"status"`
 }
 
 //type for person data
 type Person struct {
-	Hash       string    `json:hash`
+	Hash       string    `json:"hash"`
 	Status     string    `json:"status"`
 	ModifyDate time.Time `json:"modifyDate"`
 }
@@ -162,7 +162,7 @@ func (t *SimpleChaincode) getPersonHistoryIter(stub shim.ChaincodeStubInterface,
 		}
 
 	}
-	fmt.Printf("- readKeyHistory returning:\n%s", history)
+	fmt.Printf("- readKeyHistory returning:\n%v", history)
 
 	//change to array of bytes
 	historyAsBytes, _ := json.MarshalIndent(history, "", "\t") //convert to array of bytes
